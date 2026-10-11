@@ -51,7 +51,8 @@ aus seinen eigenen Dateien.
   `fixedFunction` darf nicht `1` sein (`/console fixedFunction 0`, danach Neustart).
   Unter OpenGL (`gxApi "opengl"`) nimmt das Spiel andere Shader, dann wirkt nichts.
 - Ordner so ablegen, dass es `Data\patch-5.MPQ\Shaders\Vertex\vs_3_0\Diffuse_T1.bls`
-  gibt (nicht doppelt `patch-5.MPQ\patch-5.MPQ`).
+  gibt (nicht doppelt `patch-5.MPQ\patch-5.MPQ`). Der Ordnername ist frei, solange der
+  Client ihn als Patch-Archiv erkennt, z. B. `patch-Z.mpq`.
 
 ### Schritt 1: Testfassung (Magenta)
 
@@ -74,7 +75,12 @@ Figur und auf Gebäude in der Nähe richten und langsam herumlaufen.
 | Modelle fehlen, sind schwarz, flackern, oder das Spiel stürzt ab | Fehler in den Shadern, bitte mit Screenshot melden |
 
 Der Boden bleibt immer ohne Magenta, er hat eigene Shader und bekommt keine
-Zusatzlichter.
+Zusatzlichter. Nahe an mehreren Feuern übersteuert das Magenta und schluckt das
+Orange, das ist in der Testfassung so gewollt (volle Stärke 1,0 statt der echten
+Lichtfarbe).
+
+Stand 2026-10-11: Testfassung im Spiel bestätigt (Lagerfeuer im Brachland, ab dem
+5. Feuer magenta; mit `fixedFunction 1` 8 Lichtquellen sichtbar).
 
 ### Wenn kein Magenta zu sehen ist
 
@@ -131,12 +137,17 @@ seltener an und aus, weil erst das 9. Licht wegfällt statt schon das 5.
 
 ### Ordner statt MPQ
 
-Der Client öffnet einen Ordner mit MPQ-Namen wie ein Archiv. Belegt in der Original-Exe:
-`SFileOpenArchive` (VA `0x45C480`) fragt den Dateityp ab (`0x427170`), ein Ordner
-(`FILE_ATTRIBUTE_DIRECTORY`, gesetzt bei `0x435760`) bekommt Typ 2 und wird über
-`0x453E30` als Verzeichnis-Archiv geöffnet. Ob die Suche nach `patch-?.MPQ` auch Ordner
-findet, zeigt erst der Spieltest. Klappt es nicht, den Ordner mit Ladik's MPQ Editor
-1:1 zu einem echten `patch-5.MPQ` packen.
+Der Client öffnet einen Ordner mit MPQ-Namen wie ein Archiv. Im Spieltest (2026-10-11)
+lief der Ordner direkt, ohne ihn zu packen, mit einer per St0nys AIO WoW EXE Patcher
+gepatchten Exe und dem Ordnernamen `patch-Z.mpq` (Buchstaben-Suffix, siehe Nr. 21
+„Erweiterte MPQ-Namen erlauben“). Mit `--name patch-Z.mpq` baut das Werkzeug den
+Ordner gleich unter diesem Namen.
+
+Zum Hintergrund in der Original-Exe: `SFileOpenArchive` (VA `0x45C480`) fragt den
+Dateityp ab (`0x427170`), ein Ordner (`FILE_ATTRIBUTE_DIRECTORY`, gesetzt bei
+`0x435760`) bekommt Typ 2 und wird über `0x453E30` als Verzeichnis-Archiv geöffnet.
+Lädt eine unveränderte Exe den Ordner nicht, hilft Packen mit Ladik's MPQ Editor zu
+einem echten `patch-5.MPQ`.
 
 Prüfen lässt sich das unter DXVK mit `DXVK_SHADER_DUMP_PATH`: Die neuen Shader lesen
 `c236`–`c246`, die Originale nicht.
