@@ -1,0 +1,7 @@
+# Blizzard-Dateien gehören nie ins Repo
+*.bls
+*.MPQ
+*.mpq
+*.MPQ/
+input/
+output/
