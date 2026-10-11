@@ -197,8 +197,14 @@ nach D3D9-Regel 0 (DXVK bildet die Regel nach, andere Hardware nicht sicher). Mi
 Begrenzung ist der Fall unabhängig davon sauber. Geprüft: `test_lights8.py` Test 3 und
 `d3d9_check.py` (jede Variante zusätzlich mit `c236`–`c250` = 0).
 
-Umgekehrt (Exe gepatcht, Original-Shader): die Shader lesen Licht 5–8 nicht, es bleiben
-4 Lichter wie im Original; nur `fixedFunction 1` zeigt 8.
+Umgekehrt (Exe mit Nr. 66, Original-Shader): Licht 1–4 schreibt weiterhin die
+unveränderte Original-Funktion nach `c17`–`c27`, und AddLight behält dieselben 4
+nächsten Lichter wie ohne Patch. Die Exe lädt zusätzlich `c236`–`c246` hoch, was die
+Original-Shader nicht lesen. Modelle, Gebäude und Boden sehen also aus wie im Original;
+nur `fixedFunction 1` zeigt 8 Lichter. Nr. 67 („Lichter bleiben an“) ist ein eigener,
+standardmäßig ausgeschalteter Patch: Lichter bleiben aktiv, wenn ihr Modell nicht im
+Bild ist. Das wirkt mit und ohne neue Shader gleich und hat mit der Zahl der Lichter
+nichts zu tun.
 
 Der Boden-Shader aus `--boden` ist bei gar nicht gepatchter Exe aus demselben Grund
 harmlos (eigener `def c251`). Ist aber Nr. 66 da und nur der Exe-Teil für den Boden
