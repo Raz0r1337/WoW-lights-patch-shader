@@ -76,6 +76,50 @@ Figur und auf Gebäude in der Nähe richten und langsam herumlaufen.
 Der Boden bleibt immer ohne Magenta, er hat eigene Shader und bekommt keine
 Zusatzlichter.
 
+### Wenn kein Magenta zu sehen ist
+
+Dann ist entweder die Exe-Seite nicht aktiv oder die neuen Shader werden nicht
+geladen. Zwei Tests trennen das:
+
+**Exe-Seite ohne Shader prüfen.** Im Spiel `/console fixedFunction 1` eingeben und
+das Spiel neu starten. In diesem Modus arbeitet das Spiel ohne Shader, und Nr. 66 gibt
+dem Grafikgerät 8 Lichtplätze statt 4. Dann an einem dunklen Ort nacheinander
+Lagerfeuer um die Figur stellen (Kochkunst, „Einfaches Lagerfeuer“):
+
+| Was man sieht | Bedeutung |
+|---|---|
+| Ab dem 4. Feuer geht eins wieder aus (höchstens 3 Feuer leuchten gleichzeitig) | Nr. 66 ist nicht aktiv (Original: 4 Plätze, einer davon für die Sonne) |
+| Bis zu 7 Feuer leuchten gleichzeitig auf die Figur | Nr. 66 arbeitet, die Exe liefert die Lichter |
+
+Danach wieder `/console fixedFunction 0` und neu starten.
+
+**Laden der Shader prüfen.** Mit `--ladetest` bauen:
+
+```
+python tools/build.py --ladetest Quelle "C:\WoW\Data"
+```
+
+Darin leuchten **alle** Punktlichter 1–8 in Magenta, auch die ersten vier. Sobald
+mindestens 4 Lichtquellen in der Nähe sind (4 Lagerfeuer), muss die Figur magenta
+angestrahlt sein, ganz gleich, was die Exe macht.
+
+| Was man sieht | Bedeutung |
+|---|---|
+| Figur bei 4 Feuern magenta | Die Shader werden geladen. Fehlt in der normalen Testfassung trotzdem das Magenta ab dem 5. Feuer, kommt kein Licht 5–8 von der Exe an |
+| Figur bei 4 Feuern normal beleuchtet | Die Shader werden nicht geladen (siehe unten) |
+
+Werden die Shader nicht geladen:
+
+- Pfad prüfen: `Data\patch-5.MPQ\Shaders\Vertex\vs_3_0\Diffuse_T1.bls` muss es geben.
+- `WTF\Config.wtf`: `SET gxApi "d3d9"`. Unter OpenGL wirkt nichts.
+- Den Ordner mit Ladik's MPQ Editor zu einem echten Archiv packen: neues MPQ
+  `Data\patch-5.MPQ` anlegen (Ordner vorher umbenennen oder löschen), den Ordner
+  `Shaders` hinzufügen, sodass die Pfade im Archiv `Shaders\Vertex\vs_3_0\…` lauten.
+  Dann hat der Client keinen Ordner mehr, sondern ein normales Patch-MPQ.
+- Mit DXVK lässt sich nachsehen, was wirklich geladen wird: Umgebungsvariable
+  `DXVK_SHADER_DUMP_PATH` auf einen Ordner setzen, Spiel starten; die neuen Shader
+  lesen `c236`–`c247`, die Originale nicht.
+
 ### Schritt 2: richtige Fassung
 
 Die Testfassung durch die normale ersetzen (ohne `--debug` bauen). Zum Vergleich an
@@ -147,7 +191,7 @@ und gezeichnet dieselbe Farbe liefern wie der Emulator.
 - `tools/bls.py` – Lesen/Schreiben der `.bls` (Rundlauf bitgleich über alle Dateien)
 - `tools/sm3.py` – Disassembler und Token-Werkzeug für D3D9-Shader (SM 2/3)
 - `tools/lights8.py` – Zusatzblock für Licht 5–8
-- `tools/build.py` – baut den Ordner `patch-5.MPQ` (`--debug`: Testfassung in Magenta)
+- `tools/build.py` – baut den Ordner `patch-5.MPQ` (`--debug`: Licht 5–8 in Magenta, `--ladetest`: alle Lichter in Magenta)
 - `tools/emu.py`, `tests/` – Emulator und Tests
 - `docs/PLAN.de.md` – ursprünglicher Plan mit Risiken
 

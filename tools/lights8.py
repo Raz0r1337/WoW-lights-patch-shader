@@ -185,9 +185,12 @@ def def_instr(num, values):
     return sm3.Instr(81 | (5 << 24), [dst(T_CONST, num)] + list(bits))
 
 
-def patch_shader(sh: sm3.Shader, max_temps: int, debug=False) -> sm3.Shader:
-    """debug=True: Licht 5–8 leuchten statt in ihrer Farbe in Magenta (Testfassung).
-    Leere Plätze (Farbe.w = 0) bleiben auch dann ohne Beitrag."""
+def patch_shader(sh: sm3.Shader, max_temps: int, debug=None) -> sm3.Shader:
+    """debug='magenta': Licht 5–8 leuchten statt in ihrer Farbe in Magenta
+    (Testfassung). Leere Plätze (Farbe.w = 0) bleiben auch dann ohne Beitrag.
+    debug='ladetest': zusätzlich leuchten auch Licht 1–4 in Magenta. Damit ist
+    im Spiel zu sehen, ob die neuen Shader überhaupt geladen werden, auch wenn
+    die Exe kein Licht 5–8 liefert."""
     instrs = list(sh.instrs)
 
     def find(pred, what):
@@ -267,6 +270,18 @@ def patch_shader(sh: sm3.Shader, max_temps: int, debug=False) -> sm3.Shader:
                          c(C_DEBUG if debug else C_COLOR + j), r(rK, COMP_SWZ[j]), r(A)))
 
     new_end = sm3.Instr(end.token, [sm3.Param(acc.token & ~(1 << 20))] + end.params[1:])
+    if debug == 'ladetest':
+        # Farbe von Licht 1–4 (c17–c20) in den vier Lichtadditionen durch Magenta ersetzen
+        for k in range(k_end - 3, k_end + 1):
+            i = instrs[k]
+            if i.raw is not None or i.opcode != 4 or const_reads(i)[:1] != [17 + k - (k_end - 3)]:
+                raise PatchError('Lichtadditionen c17–c20 nicht am Stück')
+            new = new_end if k == k_end else sm3.Instr(i.token, list(i.params))
+            new.params[1] = c(C_DEBUG)
+            if k == k_end:
+                new_end = new
+            else:
+                instrs[k] = new
     out = [def_instr(C_DEBUG, DEBUG_COLOR)] if debug else []
     for k, i in enumerate(instrs):
         if k == k_p:
@@ -284,7 +299,7 @@ def patch_shader(sh: sm3.Shader, max_temps: int, debug=False) -> sm3.Shader:
 LIMITS = {2: (12, 256), 3: (32, 512)}   # Temps, Befehlsslots
 
 
-def patch_variant_code(code: bytes, debug=False):
+def patch_variant_code(code: bytes, debug=None):
     sh = sm3.parse(code)
     if not sh.is_vs or not is_four_light(sh):
         return None

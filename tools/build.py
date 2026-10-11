@@ -76,8 +76,11 @@ def main(argv=None):
     ap.add_argument('quelle')
     ap.add_argument('ziel')
     ap.add_argument('--name', default='patch-5.MPQ')
-    ap.add_argument('--debug', action='store_true',
-                    help='Testfassung: Licht 5–8 leuchten Magenta statt in ihrer Farbe')
+    g = ap.add_mutually_exclusive_group()
+    g.add_argument('--debug', action='store_const', const='magenta', dest='debug',
+                   help='Testfassung: Licht 5–8 leuchten Magenta statt in ihrer Farbe')
+    g.add_argument('--ladetest', action='store_const', const='ladetest', dest='debug',
+                   help='Ladetest: alle Lichter 1–8 leuchten Magenta (zeigt, ob die Shader geladen werden)')
     args = ap.parse_args(argv)
 
     eff = effective_files(args.quelle)
