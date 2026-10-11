@@ -5,3 +5,5 @@
 *.MPQ/
 input/
 output/
+*.exe
+__pycache__/

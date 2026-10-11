@@ -1,5 +1,12 @@
 # Plan: Vertex-Shader für 8 Punktlichter (WoW 3.3.5a, 12340, mit DXVK)
 
+> **Stand 2026-10-11:** Umgesetzt, siehe README. Erledigt sind R1 (Platz reicht),
+> R2 (höchste Konstante der Originale ist c235, Knochen enden vorher), R3 (leere
+> Plätze bekommen nur Farbe 0; Position und Abschwächung bleiben stehen, Startwert
+> Abschwächung 1.0, also kein Nenner 0), R4/R5 (Emulator- und D3D9-Test), R6
+> (kein Original liest c236 und höher). R7 (Ordner als MPQ) ist im Code der Exe
+> belegt, der Spieltest steht aus.
+
 Stand: 2026-10-11. Grundlage: `Uebergabe_Lichter_Shader.md`, Zweig
 `st0ny-dev-lights` (`d83df5c`) im Patcher-Repo, Upstream-Stand des DXVK-Forks
 (`c7d8aa1`). Nichts committet, nichts gepusht.

@@ -1,11 +1,115 @@
 # WoW-lights-patch-shader
 
-Werkzeug für WoW 3.3.5a (12340): baut aus den eigenen Original-Shadern des
-Spielers Vertex-Shader, die mit Patch Nr. 66 („Mehr Lichter“) aus
-St0nys AIO WoW EXE Patcher bis zu 8 Punktlichter darstellen.
+Werkzeug für WoW 3.3.5a (12340): baut aus den eigenen Original-Shadern Vertex-Shader,
+die bis zu **8 Punktlichter** darstellen. Gegenstück zu Patch **Nr. 66 „Mehr Lichter:
+8 statt 4 Punktlichter“** aus St0nys AIO WoW EXE Patcher. Ohne neue Shader liefert die
+Exe Licht 5–8 zwar an die Grafik, sichtbar wird es aber nicht.
 
-Das Repo enthält **keine Blizzard-Dateien**. Die fertigen Shader entstehen
-beim Spieler aus seinen eigenen Dateien, in einem Ordner mit MPQ-Namen und
-MPQ-Aufbau, z. B. `Data\patch-5.MPQ\Shaders\Vertex\vs_3_0\Diffuse_T1.bls`.
+Das Repo enthält **keine Blizzard-Dateien**. Die neuen Shader entstehen beim Spieler
+aus seinen eigenen Dateien.
 
-Stand: Planung, siehe [docs/PLAN.de.md](docs/PLAN.de.md).
+## Voraussetzungen
+
+- `Wow.exe` 3.3.5a mit Nr. 66, zum Testen am besten auch Nr. 67 („Lichter bleiben an,
+  wenn ihre Quelle außerhalb des Bildes ist“).
+- Python 3 (nur Standardbibliothek). Für die Tests zusätzlich `numpy`.
+
+## Benutzung
+
+1. Mit Ladik's MPQ Editor aus jedem MPQ, das einen Ordner `Shaders\` hat, diesen Ordner
+   exportieren, je MPQ in einen eigenen Unterordner mit dem Namen des MPQ:
+
+   ```
+   Quelle\
+     common-2.MPQ\Shaders\...
+     patch.MPQ\Shaders\...
+     patch-2.MPQ\Shaders\...
+     patch-3.MPQ\Shaders\...
+   ```
+
+   Welche Datei gilt, entscheidet das Werkzeug wie das Spiel: `patch-3` vor `patch-2`
+   vor `patch` vor den Grund-MPQs.
+
+2. Shader bauen, Ziel ist der `Data`-Ordner des Spiels:
+
+   ```
+   python tools/build.py Quelle "C:\WoW\Data"
+   ```
+
+   Ergebnis: `Data\patch-5.MPQ\Shaders\Vertex\vs_2_0\*.bls` und `...\vs_3_0\*.bls`,
+   ein **Ordner** mit dem Namen und Aufbau eines MPQ. Mit `--name` lässt sich ein
+   anderer Name wählen.
+
+3. Im Spiel: `/console fixedFunction 0` (Standard), Ort mit vielen Lichtern aufsuchen,
+   z. B. Fackeln in Sturmwind oder Dalaran.
+
+### Ordner statt MPQ
+
+Der Client öffnet einen Ordner mit MPQ-Namen wie ein Archiv. Belegt in der Original-Exe:
+`SFileOpenArchive` (VA `0x45C480`) fragt den Dateityp ab (`0x427170`), ein Ordner
+(`FILE_ATTRIBUTE_DIRECTORY`, gesetzt bei `0x435760`) bekommt Typ 2 und wird über
+`0x453E30` als Verzeichnis-Archiv geöffnet. Ob die Suche nach `patch-?.MPQ` auch Ordner
+findet, zeigt erst der Spieltest. Klappt es nicht, den Ordner mit Ladik's MPQ Editor
+1:1 zu einem echten `patch-5.MPQ` packen.
+
+Prüfen lässt sich das unter DXVK mit `DXVK_SHADER_DUMP_PATH`: Die neuen Shader lesen
+`c236`–`c246`, die Originale nicht.
+
+## Was geändert wird
+
+- Nur die Varianten mit 4 Lichtern (Nr. 9, 19, …, 89 jeder Datei) der Modell-Shader
+  (`Diffuse_*`, `CDiffuse_T1`) und Gebäude-Shader (`MapObj*`), in `vs_2_0` und `vs_3_0`.
+  Das Spiel nimmt diese Varianten ab 4 Lichtern.
+- Licht 1–4 bleiben Befehl für Befehl unverändert. Hinter der letzten Lichtaddition
+  rechnet ein Zusatzblock (31 Befehle, dazu 2 zum Sichern von Position und Normale) Licht 5–8 nach derselben Formel wie das Original:
+
+  ```
+  L = Lichtposition - P;  d2 = dot(L, L)
+  ndl = max(dot(L, N) * rsq(d2), 0)
+  att = 1 / (a0 + a1 * d2 * rsq(d2) + a2 * d2)
+  Summe += Farbe * ndl * att
+  ```
+
+  mit den Registern, die Nr. 66 belegt: `c236–c239` Farbe, `c240–c243` Position,
+  `c244–c246` Abschwächung. Die Sättigung der Summe wandert ans Ende des Zusatzblocks.
+- Nicht geändert: Boden und Wasser (eigene Shader, eigener Datenweg), `vs_1_1` (zu wenige
+  Konstanten), OpenGL (`arbvp1`).
+- Platz: höchstens 138 Befehlsslots (Grenze vs_2_0: 256) und Temp-Register bis `r10`
+  (Grenze vs_2_0: `r11`). Kein Original-Shader liest `c236`–`c246`, die höchste benutzte
+  Konstante ist `c235`.
+
+## Tests
+
+```
+python3 tests/test_lights8.py <Quelle>/patch.MPQ/Shaders/Vertex [...]
+```
+
+Emulator-Test für jede erweiterte Variante, mit IEEE-Rechnung und mit der D3D9-Regel
+`0 · x = 0` (DXVK `d3d9.floatEmulation`):
+
+- Licht 5–8 leer (Farbe 0, Position und Abschwächung beliebig): alle Ausgaben bitgleich
+  zum Original.
+- Licht 5–8 belegt: Farbe = Original mit Licht 1–4 + Original mit Licht 5–8 auf den
+  Plätzen 1–4 − Original ohne Lichter.
+
+```
+x86_64-w64-mingw32-gcc -O2 -o runner.exe tests/d3d9/runner.c -ld3d9
+WINE=wine python3 tests/d3d9_check.py <Data>/patch-5.MPQ runner.exe
+```
+
+Gegenprobe mit echter D3D9-Laufzeit unter Wine: Jede Variante muss sich anlegen lassen
+und gezeichnet dieselbe Farbe liefern wie der Emulator.
+
+## Dateien
+
+- `tools/bls.py` – Lesen/Schreiben der `.bls` (Rundlauf bitgleich über alle Dateien)
+- `tools/sm3.py` – Disassembler und Token-Werkzeug für D3D9-Shader (SM 2/3)
+- `tools/lights8.py` – Zusatzblock für Licht 5–8
+- `tools/build.py` – baut den Ordner `patch-5.MPQ`
+- `tools/emu.py`, `tests/` – Emulator und Tests
+- `docs/PLAN.de.md` – ursprünglicher Plan mit Risiken
+
+## Bekannt
+
+- In `patch.MPQ` sind `MapObjDiffuse_Comp.bls`, `MapObjDiffuse_T1_Env.bls` und
+  `MapObjUDiffuse_T1_Env.bls` leer (0 Byte). Das Werkzeug überspringt sie.
