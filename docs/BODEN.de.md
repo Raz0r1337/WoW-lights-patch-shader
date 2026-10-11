@@ -80,7 +80,12 @@ einen eigenen Upload.
    - Puffer 15 Vektoren (5 Lichter × 3), dann
      `CGxDevice::vtable[+0x118](0, 236, Puffer, 15)` → **c236–c250**.
    - Nur wenn `[CGxDevice+0x2E0]` ≥ 251 (DXVK meldet 256; vs_2_0 erlaubt bis c255).
-2. Variantenwahl unverändert lassen: Die Exe wählt die Lichter-Varianten, sobald
+2. Den Boden-Teil fest an Nr. 66 koppeln (nicht einzeln aktivierbar): Nr. 66 und
+   Boden-Teil schreiben beide ab c236, jeder Shader liest nur direkt nach seinem
+   eigenen Upload. Gäbe es den Boden-Teil ohne Nr. 66, läsen die neuen Modell-Shader
+   Bodenlichter in falschem Format. Eine Prüfung auf mindestens 251 VS-Konstanten
+   reicht für beide Teile.
+3. Variantenwahl unverändert lassen: Die Exe wählt die Lichter-Varianten, sobald
    mindestens ein Licht da ist; die neuen Shader rechnen 8 Plätze, leere Plätze
    (Farbe 0) tragen nichts bei.
 

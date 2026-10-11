@@ -211,6 +211,21 @@ harmlos (eigener `def c251`). Ist aber Nr. 66 da und nur der Exe-Teil für den B
 fehlt, stehen in `c236`–`c250` die Modell-Lichter in anderem Format: der Boden wird
 falsch beleuchtet. Darum den Boden nur zusammen mit dem Exe-Teil einsetzen.
 
+Mit Nr. 66 **und** Exe-Teil für den Boden sind alle Kombinationen sauber, weil jeder
+Shader `c236` ff. nur direkt nach seinem eigenen Upload liest (Nr. 66 lädt vor jedem
+Modell, der Boden-Teil vor jedem Bodenstück):
+
+| Shader im Ordner | Modelle, Gebäude | Boden |
+|---|---|---|
+| Original | 4 Lichter (Original) | 3 Lichter (Original) |
+| neu, ohne `--boden` | 8 Lichter | 3 Lichter (Original) |
+| neu, mit `--boden` | 8 Lichter | 8 Lichter |
+
+Empfehlung für den Patcher: den Boden-Teil fest in Nr. 66 einbauen, nicht als eigenen
+Patch. Gäbe es den Boden-Teil ohne Nr. 66, läsen die neuen Modell-Shader in
+`c236`–`c246` die Bodenlichter in falschem Format. Sobald beide zusammen in der Exe
+sind, wird der Boden zum Standard beim Bauen.
+
 ## Tests
 
 ```
