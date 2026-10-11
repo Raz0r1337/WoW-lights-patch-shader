@@ -1,7 +1,8 @@
 """Gegenprobe der gepatchten Shader mit einer echten D3D9-Laufzeit (Wine).
 
 Jede erweiterte Variante wird von D3D9 angelegt (CreateVertexShader) und mit
-Licht 1–8 gezeichnet: ein Punkt pro Vertex, gelesen wird die Farbe. Die muss
+Licht 1–8 gezeichnet, dazu einmal mit c236–c250 = 0 (Exe ohne Patch): ein
+Punkt pro Vertex, gelesen wird die Farbe. Die muss
 zum Emulator (tools/emu.py) passen, der in test_lights8.py gegen den
 Original-Shader geprüft ist.
 
@@ -126,7 +127,11 @@ def main(folder, runner):
             elif i % 10 != 9:
                 continue
             sh = sm3.parse(v.code)
-            cases.append((path, i, v.code, sh) + make_case(sh, rng, terrain))
+            inputs, c, sx, sy = make_case(sh, rng, terrain)
+            cases.append((path, i, v.code, sh, inputs, c, sx, sy))
+            c0 = c.copy()                        # Exe ungepatcht: c236–c250 nie gesetzt
+            c0[236:251] = 0
+            cases.append((path, i, v.code, sh, inputs, c0, sx, sy))
     blob = bytearray(struct.pack('<3I', W, H, len(cases)))
     for path, i, code, sh, inputs, c, sx, sy in cases:
         ps = PS30 if sh.major == 3 else PS20
@@ -159,6 +164,8 @@ def main(folder, runner):
         img = np.frombuffer(res, np.uint8, W * H * 4, o).reshape(H, W, 4)
         o += W * H * 4
         name = f'{os.path.basename(os.path.dirname(path))}/{os.path.basename(path)} #{i}'
+        if not c[236:251].any():
+            name += ' (c236–c250 = 0)'
         if hc or hd:
             print(f'FEHLER {name}: CreateVertexShader 0x{hc & 0xffffffff:08x}, Draw 0x{hd & 0xffffffff:08x}')
             fails += 1

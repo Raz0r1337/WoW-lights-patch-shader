@@ -93,6 +93,10 @@ Vertexposition und Normale werden vorher in freie Temps gesichert (Licht 3
 leere Plätze bitgleich, Lichter in 4–8 = Überlagerung) und `tests/d3d9_check.py`
 (Wine-D3D9). Bauen mit `python3 tools/build.py QUELLE ZIEL --boden`.
 
+Der Nenner der Abschwächung wird per `max` auf `c251.x` (= 1e-6, eigener `def`)
+begrenzt; bei gar nicht gepatchter Exe (c236–c250 = 0) ist das Ergebnis so bitgleich
+zum Original (Test 3 in `test_terrain8.py`, `d3d9_check.py` mit Nullen).
+
 **Wichtig:** Diese Boden-Shader erst einsetzen, wenn der Exe-Teil da ist. Ohne ihn
 lesen sie in c236–c250 Reste der Modell-Lichter (anderes Format) und der Boden wird
 falsch beleuchtet. Darum baut das Werkzeug den Boden nur mit `--boden`.

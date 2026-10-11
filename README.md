@@ -165,7 +165,8 @@ Prüfen lässt sich das unter DXVK mit `DXVK_SHADER_DUMP_PATH`: Die neuen Shader
   (`Diffuse_*`, `CDiffuse_T1`) und Gebäude-Shader (`MapObj*`), in `vs_2_0` und `vs_3_0`.
   Das Spiel nimmt diese Varianten ab 4 Lichtern.
 - Licht 1–4 bleiben Befehl für Befehl unverändert. Hinter der letzten Lichtaddition
-  rechnet ein Zusatzblock (31 Befehle, dazu 2 zum Sichern von Position und Normale) Licht 5–8 nach derselben Formel wie das Original:
+  rechnet ein Zusatzblock (32 Befehle, dazu 2 zum Sichern von Position und Normale und
+  ein `def c247`) Licht 5–8 nach derselben Formel wie das Original:
 
   ```
   L = Lichtposition - P;  d2 = dot(L, L)
@@ -176,11 +177,33 @@ Prüfen lässt sich das unter DXVK mit `DXVK_SHADER_DUMP_PATH`: Die neuen Shader
 
   mit den Registern, die Nr. 66 belegt: `c236–c239` Farbe, `c240–c243` Position,
   `c244–c246` Abschwächung. Die Sättigung der Summe wandert ans Ende des Zusatzblocks.
+  Der Nenner der Abschwächung wird vor dem Kehrwert per `max` auf `c247.w` (= 1e-6,
+  eigener `def`) begrenzt, damit bei nie gesetzten Registern keine Division durch 0
+  entsteht (siehe „Ohne Exe-Patch“).
 - Nicht geändert: Boden und Wasser (eigene Shader, eigener Datenweg), `vs_1_1` (zu wenige
   Konstanten), OpenGL (`arbvp1`).
-- Platz: höchstens 138 Befehlsslots (Grenze vs_2_0: 256) und Temp-Register bis `r10`
-  (Grenze vs_2_0: `r11`). Kein Original-Shader liest `c236`–`c246`, die höchste benutzte
+- Platz: höchstens 139 Befehlsslots (Grenze vs_2_0: 256) und Temp-Register bis `r10`
+  (Grenze vs_2_0: `r11`). Kein Original-Shader liest `c236`–`c247`, die höchste benutzte
   Konstante ist `c235`.
+
+### Ohne Exe-Patch
+
+Sind die neuen Shader da, aber die Exe hat Patch Nr. 66 nicht, schreibt die Exe nie in
+`c236`–`c246`; dort steht dann 0 (unter DXVK sicher, da der Konstantenpuffer mit 0
+beginnt; unter Windows-D3D9 nach Dokumentation ebenso). Farbe 0 heißt: Licht 5–8
+tragen nichts bei, die Shader liefern bitgleich das Original mit 4 Lichtern. Ohne die
+`max`-Begrenzung wäre die Abschwächung 1/0; 0 · unendlich ist nach IEEE NaN und nur
+nach D3D9-Regel 0 (DXVK bildet die Regel nach, andere Hardware nicht sicher). Mit der
+Begrenzung ist der Fall unabhängig davon sauber. Geprüft: `test_lights8.py` Test 3 und
+`d3d9_check.py` (jede Variante zusätzlich mit `c236`–`c250` = 0).
+
+Umgekehrt (Exe gepatcht, Original-Shader): die Shader lesen Licht 5–8 nicht, es bleiben
+4 Lichter wie im Original; nur `fixedFunction 1` zeigt 8.
+
+Der Boden-Shader aus `--boden` ist bei gar nicht gepatchter Exe aus demselben Grund
+harmlos (eigener `def c251`). Ist aber Nr. 66 da und nur der Exe-Teil für den Boden
+fehlt, stehen in `c236`–`c250` die Modell-Lichter in anderem Format: der Boden wird
+falsch beleuchtet. Darum den Boden nur zusammen mit dem Exe-Teil einsetzen.
 
 ## Tests
 
@@ -189,7 +212,8 @@ python3 tests/test_lights8.py <Quelle>/patch.MPQ/Shaders/Vertex [...]
 ```
 
 Emulator-Test für jede erweiterte Variante, mit IEEE-Rechnung und mit der D3D9-Regel
-`0 · x = 0` (DXVK `d3d9.floatEmulation`):
+`0 · x = 0` (DXVK `d3d9.floatEmulation`), dazu Test 3 mit `c236`–`c246` = 0 (Exe ohne
+Patch, muss bitgleich sein):
 
 - Licht 5–8 leer (Farbe 0, Position und Abschwächung beliebig): alle Ausgaben bitgleich
   zum Original.

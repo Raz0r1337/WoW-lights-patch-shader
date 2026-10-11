@@ -8,6 +8,7 @@ Test 1: Licht 5–8 leer (Farbe 0, Rest beliebig) -> alle Ausgaben bitgleich
 Test 2: Lichter A in Platz 1–4, Lichter B in Platz 5–8 -> Farbe muss
         Original(A) + Original(B in Platz 1–4) - Original(ohne Lichter)
         sein (Farben klein gewählt, damit nichts sättigt).
+Test 3: c236–c246 alle 0 (Exe ohne Lichter-Patch) -> bitgleich zum Original.
 Mit --debug (Testfassung, Licht 5–8 in Magenta): Test 1 wie oben, dazu muss
 Grün bitgleich zum Original mit Licht 1–4 bleiben und Rot/Blau heller werden.
 Mit --ladetest (alle Lichter in Magenta): Grün muss dem Original ohne
@@ -116,6 +117,14 @@ def check(path, code, new, rng, d3d9, debug=False):
     for k in o:
         if debug != 'ladetest' and not np.array_equal(o[k].view(np.uint32), p[k].view(np.uint32)):
             return f'Test 1: Ausgabe {k} weicht ab'
+    # Test 3: Exe ungepatcht, c236–c246 nie gesetzt (alles 0) -> bitgleich
+    if debug != 'ladetest':
+        c3 = dict(c)
+        c3.update({k: F([0, 0, 0, 0]) for k in range(236, 247)})
+        p = pat.run(c3, ins, N)
+        for k in o:
+            if not np.array_equal(o[k].view(np.uint32), p[k].view(np.uint32)):
+                return f'Test 3 (alles 0): Ausgabe {k} weicht ab'
     # Test 2
     c2 = dict(c)
     put(c2, 236, 240, 244, B)

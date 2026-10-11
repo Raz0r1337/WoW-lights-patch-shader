@@ -24,14 +24,22 @@ dieselbe Summe heraus.
 P und N werden an den Stellen gesichert, an denen das Original sie selbst
 zuletzt liest (vor `add rL.xyz, -P, c21` bzw. vor dem Sonnenterm mit c12),
 in Temp-Register, die die Variante sonst nicht benutzt.
+
+Ist die Exe nicht gepatcht, schreibt sie c236–c246 nie; dort steht dann 0.
+Farbe 0 ergibt keinen Beitrag, aber Abschwächung 0 wäre eine Division durch 0
+(0 * unendlich ist nach IEEE NaN, nach D3D9-Regel 0). Darum wird der Nenner
+der Abschwächung per `max` auf EPS (def c247.w) begrenzt; so bleibt das
+Ergebnis auch dann bitgleich zum Original.
 """
 
 import struct
 import sm3
 
 C_COLOR, C_POS, C_ATT = 236, 240, 244
-C_DEBUG = 247                                  # nur Testfassung: Magenta per def
-DEBUG_COLOR = (1.0, 0.0, 1.0, 0.0)
+C_DEF = 247                                    # eigener def: xyz Magenta (Testfassung), w = EPS
+C_DEBUG = C_DEF
+EPS = 1e-6                                     # Untergrenze für den Nenner der Abschwächung
+DEF_VALUES = (1.0, 0.0, 1.0, EPS)
 X, Y, Z, W = 0x00, 0x55, 0xAA, 0xFF          # Replikations-Swizzles
 SWZ_ID = 0xE4
 MASK = {'x': 1, 'y': 2, 'z': 4, 'w': 8, 'xyz': 7, 'xyzw': 15}
@@ -258,6 +266,7 @@ def patch_shader(sh: sm3.Shader, max_temps: int, debug=None) -> sm3.Shader:
         ins('mul', dst(T_TEMP, rT), r(rT), c(C_ATT + 1)),           # a1 * d
         ins('mad', dst(T_TEMP, rT), r(rD), c(C_ATT + 2), r(rT)),    # + a2 * d2
         ins('add', dst(T_TEMP, rT), r(rT), c(C_ATT)),               # + a0
+        ins('max', dst(T_TEMP, rT), r(rT), c(C_DEF, W)),            # Nenner >= EPS (Exe ungepatcht: alles 0)
     ]
     for j in range(4):
         block.append(ins('rcp', dst(T_TEMP, rL, comp[j]), r(rT, COMP_SWZ[j])))
@@ -282,7 +291,7 @@ def patch_shader(sh: sm3.Shader, max_temps: int, debug=None) -> sm3.Shader:
                 new_end = new
             else:
                 instrs[k] = new
-    out = [def_instr(C_DEBUG, DEBUG_COLOR)] if debug else []
+    out = [def_instr(C_DEF, DEF_VALUES)]
     for k, i in enumerate(instrs):
         if k == k_p:
             out.append(save_p)

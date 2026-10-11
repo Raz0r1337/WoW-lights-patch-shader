@@ -9,7 +9,8 @@ Test 2: Lichter A in Platz 1–3, B in 4–6, C in 7–8 -> Farbe muss
         Original(A) + Original(B in 1–3) + Original(C in 1–3) - 2 * Original(leer)
         sein (Farben klein, damit die Begrenzung auf 1 nicht greift); alle
         anderen Ausgaben unverändert.
-Beides mit IEEE-Multiplikation und mit der D3D9-Regel 0*x=0.
+Test 3: c236–c250 alle 0 (Exe ohne Patch) -> bitgleich zum Original.
+Alles mit IEEE-Multiplikation und mit der D3D9-Regel 0*x=0.
 """
 
 import os
@@ -95,6 +96,13 @@ def check(code, new, rng, d3d9):
     for k in o:
         if not np.array_equal(o[k].view(np.uint32), p[k].view(np.uint32)):
             return f'Test 1: Ausgabe {k} weicht ab'
+    # Test 3: Exe ungepatcht, c236–c250 nie gesetzt (alles 0) -> bitgleich
+    c3 = dict(c)
+    c3.update({k: F([0, 0, 0, 0]) for k in range(236, 251)})
+    p = pat.run(c3, ins, N)
+    for k in o:
+        if not np.array_equal(o[k].view(np.uint32), p[k].view(np.uint32)):
+            return f'Test 3 (alles 0): Ausgabe {k} weicht ab'
     c2 = dict(c)
     put(c2, 236, B + C[:2])
     p = pat.run(c2, ins, N)

@@ -25,6 +25,13 @@ Formel je Licht wie im Original (Variante 64):
     ndl = sat(dot(L, N)) ; att = rcp(a0 + a1 * d + a2 * d2)
     Summe += ndl * Farbe * att
 
+Ist nur Patch Nr. 66 da, aber nicht der Exe-Teil für den Boden, stehen in
+c236–c250 die Modell-Lichter 5–8 in anderem Format: der Boden würde falsch
+beleuchtet. Ist die Exe gar nicht gepatcht, steht dort 0: Farbe 0 ergibt
+keinen Beitrag, und der Nenner der Abschwächung wird per `max` auf EPS
+(def c251.x) begrenzt, damit keine Division durch 0 entsteht. Das Ergebnis
+ist dann bitgleich zum Original.
+
 Licht 1–3 bleiben Befehl für Befehl unverändert. Vertexposition P und
 Normale N werden vorher in freie Temps gesichert (vor dem ersten
 Lichtbefehl bzw. vor dem Sonnenterm mit c24), weil Licht 3 sie in manchen
@@ -34,11 +41,12 @@ Varianten überschreibt.
 import struct
 import sm3
 from lights8 import (PatchError, dst, src, r, c, used_temps, live_after,
-                     const_reads, T_TEMP, T_CONST, X, Y, Z, W, LIMITS)
+                     const_reads, def_instr, EPS, T_TEMP, T_CONST, X, Y, Z, W, LIMITS)
 
 C_BASE = 236            # Licht 4: c236..c238, Licht 5: c239..c241, ...
 N_EXTRA = 5
 C_LAST = C_BASE + 3 * N_EXTRA - 1      # c250
+C_EPS = 251             # def: x = EPS, Untergrenze für den Nenner der Abschwächung
 
 OP = {'mov': 1, 'add': 2, 'mad': 4, 'mul': 5, 'rcp': 6, 'rsq': 7,
       'dp3': 8, 'min': 10, 'max': 11}
@@ -157,10 +165,11 @@ def patch_shader(sh: sm3.Shader, max_temps: int) -> sm3.Shader:
             ins('mad', dst(T_TEMP, rL, 'w'), c(b + 2, Y), r(rP, W), c(b + 2, X)),   # a0 + a1*d
             ins('mul', dst(T_TEMP, rP, 'w'), r(rP, W), r(rP, W)),            # d2
             ins('mad', dst(T_TEMP, rL, 'w'), r(rP, W), c(b + 2, Z), r(rL, W)),      # + a2*d2
+            ins('max', dst(T_TEMP, rL, 'w'), r(rL, W), c(C_EPS, X)),         # Nenner >= EPS
             ins('rcp', dst(T_TEMP, rL, 'w'), r(rL, W)),                      # att
             ins('mad', dst(T_TEMP, A, 'xyz'), r(rL), r(rL, W), r(A)),        # Summe
         ]
-    out = []
+    out = [def_instr(C_EPS, (EPS, 0.0, 0.0, 0.0))]
     for k, i in enumerate(instrs):
         if k == k_first:
             out.append(save_p)
