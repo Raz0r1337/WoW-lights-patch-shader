@@ -135,6 +135,13 @@ Mit dem Ordner werden Figur und Gebäude von mehr Lichtquellen gleichzeitig
 beleuchtet. Läuft man an einer Reihe Fackeln vorbei, springt das Licht auf der Figur
 seltener an und aus, weil erst das 9. Licht wegfällt statt schon das 5.
 
+Ergebnis des Spieltests (2026-10-11, acht Lagerfeuer im Kreis, Brachland): Mit dem
+Ordner sind die Steine der Lagerfeuer etwas heller und gleichmäßiger angeleuchtet,
+weil jedes Feuer nun auch von den Nachbarfeuern Licht bekommt. Der Unterschied ist
+klein, da ein Lagerfeuer nur wenige Meter weit leuchtet. Nichts fehlt, nichts ist
+schwarz. Deutlicher wird der Unterschied bei einer Figur, die zwischen mehr als vier
+nahen Lichtquellen steht, oder bei Fackelreihen in Städten.
+
 ### Ordner statt MPQ
 
 Der Client öffnet einen Ordner mit MPQ-Namen wie ein Archiv. Im Spieltest (2026-10-11)
@@ -201,12 +208,36 @@ und gezeichnet dieselbe Farbe liefern wie der Emulator.
 
 - `tools/bls.py` – Lesen/Schreiben der `.bls` (Rundlauf bitgleich über alle Dateien)
 - `tools/sm3.py` – Disassembler und Token-Werkzeug für D3D9-Shader (SM 2/3)
-- `tools/lights8.py` – Zusatzblock für Licht 5–8
-- `tools/build.py` – baut den Ordner `patch-5.MPQ` (`--debug`: Licht 5–8 in Magenta, `--ladetest`: alle Lichter in Magenta)
-- `tools/emu.py`, `tests/` – Emulator und Tests
+- `tools/lights8.py` – Zusatzblock für Licht 5–8 (Modelle, Gebäude)
+- `tools/terrain8.py` – Boden (Terrain.bls) von 3 auf 8 Lichter, nur mit Exe-Teil (siehe unten)
+- `tools/build.py` – baut den Ordner `patch-5.MPQ` (`--debug`: Licht 5–8 in Magenta, `--ladetest`: alle Lichter in Magenta, `--boden`: auch den Boden)
+- `tools/emu.py`, `tests/` – Emulator und Tests (`test_lights8.py`, `test_terrain8.py`, `d3d9_check.py`)
 - `docs/PLAN.de.md` – ursprünglicher Plan mit Risiken
+- `docs/BODEN.de.md` – Boden: Analyse, Exe-Stellen und Vorschlag für den Exe-Teil
+
+## Boden (Terrain)
+
+Der Boden geht einen eigenen Weg: `Terrain.bls` rechnet je Bodenstück höchstens
+3 Punktlichter aus eigenen Konstanten (c28–c36), die die Exe füllt (VA `0x7D0050`).
+Der Lichter-Patch Nr. 66 ändert daran nichts, darum bekommt der Boden weiter nur
+3 der 8 Lichter und an den Kanten der Bodenstücke sieht man Sprünge (so auch im
+Original). `tools/terrain8.py` erweitert die Boden-Varianten auf 8 Lichter, die
+Licht 4–8 aus c236–c250 lesen (je Licht Position, Farbe, Abschwächung wie c28–c36).
+Das wirkt erst, wenn ein Exe-Teil diese Konstanten liefert; Stellen, Format und
+Vorschlag stehen in [docs/BODEN.de.md](docs/BODEN.de.md).
+
+**Ohne diesen Exe-Teil die Boden-Shader nicht einsetzen**: Sie lesen dann Reste
+der Modell-Lichter und der Boden wird falsch beleuchtet. Darum werden sie nur mit
+`--boden` gebaut:
+
+```
+python3 tools/build.py QUELLE ZIEL --boden
+python3 tests/test_terrain8.py QUELLE/patch.MPQ/Shaders/Vertex
+```
 
 ## Bekannt
 
 - In `patch.MPQ` sind `MapObjDiffuse_Comp.bls`, `MapObjDiffuse_T1_Env.bls` und
-  `MapObjUDiffuse_T1_Env.bls` leer (0 Byte). Das Werkzeug überspringt sie.
+  `MapObjUDiffuse_T1_Env.bls` leer (0 Byte); in `common-2.MPQ` sind sie vorhanden.
+  Das sind vermutlich Löschmarken des Patch-Archivs (das Spiel benutzt die Dateien
+  dann nicht). Das Werkzeug überspringt sie.

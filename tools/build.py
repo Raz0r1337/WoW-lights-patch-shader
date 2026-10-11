@@ -13,6 +13,8 @@ ZIEL    Hier entsteht ZIEL/<name>/Shaders/Vertex/vs_2_0|vs_3_0/*.bls.
 
 Es werden nur Dateien geschrieben, die sich ändern (Modell- und Gebäude-
 Shader mit 4-Lichter-Varianten), und nur für vs_2_0 und vs_3_0.
+Mit --boden zusätzlich Terrain.bls (Boden, 3 -> 8 Lichter); das setzt den
+Exe-Teil für den Boden voraus, siehe docs/BODEN.de.md.
 """
 
 import argparse
@@ -21,8 +23,9 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import bls      # noqa: E402
-import lights8  # noqa: E402
+import bls       # noqa: E402
+import lights8   # noqa: E402
+import terrain8  # noqa: E402
 
 PROFILES = ('vs_2_0', 'vs_3_0')
 BASE_ORDER = ['common', 'common-2', 'expansion', 'lichking']
@@ -81,6 +84,9 @@ def main(argv=None):
                    help='Testfassung: Licht 5–8 leuchten Magenta statt in ihrer Farbe')
     g.add_argument('--ladetest', action='store_const', const='ladetest', dest='debug',
                    help='Ladetest: alle Lichter 1–8 leuchten Magenta (zeigt, ob die Shader geladen werden)')
+    ap.add_argument('--boden', action='store_true',
+                    help='auch den Boden-Shader (Terrain.bls) auf 8 Lichter erweitern. '
+                         'NUR mit dem passenden Exe-Teil benutzen (siehe docs/BODEN.de.md)')
     args = ap.parse_args(argv)
 
     eff = effective_files(args.quelle)
@@ -102,9 +108,13 @@ def main(argv=None):
             print(f'  übersprungen ({e}): {mpq} {prof}/{fname}')
             continue
         changed = 0
+        is_terrain = fname.lower() == 'terrain.bls'
         try:
             for v in f.variants:
-                new = lights8.patch_variant_code(v.code, args.debug)
+                if is_terrain:
+                    new = terrain8.patch_variant_code(v.code) if args.boden else None
+                else:
+                    new = lights8.patch_variant_code(v.code, args.debug)
                 if new is not None:
                     v.code = new
                     changed += 1

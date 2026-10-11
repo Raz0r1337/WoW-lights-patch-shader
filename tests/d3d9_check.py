@@ -42,7 +42,7 @@ def decls(sh):
     return out
 
 
-def make_case(sh, rng):
+def make_case(sh, rng, terrain=False):
     n = GRID * GRID
     a, b = np.meshgrid(np.arange(GRID), np.arange(GRID))
     sx = 2 * a.ravel() + 0.25
@@ -65,6 +65,8 @@ def make_case(sh, rng):
             v = rng.uniform(0, 1, (n, 4))
         inputs[reg] = v.astype(F)
     c = np.zeros((256, 4), F)
+    if terrain:
+        return make_terrain_case(sh, rng, inputs, c, sx, sy)
     c[2:6] = np.eye(4)                           # Projektion = Einheit
     for base in range(31, 223, 3):               # Modell/Knochen = Einheit
         c[base:base + 3] = np.eye(4)[:3]
@@ -83,6 +85,25 @@ def make_case(sh, rng):
     return inputs, c, sx, sy
 
 
+def make_terrain_case(sh, rng, inputs, c, sx, sy):
+    """Boden: r0 = x*c0 + y*c1 + z*c2 + c3, o0 = r0 * [c4..c7]; Lichter c28–c36
+    und c236–c250 je Position, Farbe, Abschwächung."""
+    c[0:4] = np.eye(4)
+    c[4:8] = np.eye(4)
+    c[12] = [0, 0.5, 1, 0]
+    c[18:23] = [1, 1, 0, 0]
+    c[24] = [0.3, -0.5, 0.8, 0]
+    c[25] = [0.1, 0.1, 0.1, 1]
+    c[26] = [0.1, 0.1, 0.1, 1]
+    c[27] = [0.2, 0.2, 0.2, 2]
+    for base in list(range(28, 37, 3)) + list(range(236, 251, 3)):
+        c[base] = list(rng.uniform(-2, 2, 3)) + [1]
+        c[base + 1] = list(rng.uniform(0, 0.3, 3)) + [0]
+        c[base + 2] = [rng.uniform(0.3, 1.0), rng.uniform(0, 0.5), rng.uniform(0, 0.5), 0]
+    c[37:49] = rng.uniform(-1, 1, (12, 4))
+    return inputs, c, sx, sy
+
+
 def color_key(sh):
     if sh.major == 2:
         return (5, 0)
@@ -97,11 +118,15 @@ def main(folder, runner):
     rng = np.random.default_rng(7)
     cases = []
     for path in sorted(glob.glob(os.path.join(folder, 'Shaders', 'Vertex', 'vs_[23]_0', '*.bls'))):
+        terrain = os.path.basename(path).lower() == 'terrain.bls'
         for i, v in enumerate(bls.load(path).variants):
-            if i % 10 != 9:
+            if terrain:
+                if i < 64:               # nur die Lichter-Varianten
+                    continue
+            elif i % 10 != 9:
                 continue
             sh = sm3.parse(v.code)
-            cases.append((path, i, v.code, sh) + make_case(sh, rng))
+            cases.append((path, i, v.code, sh) + make_case(sh, rng, terrain))
     blob = bytearray(struct.pack('<3I', W, H, len(cases)))
     for path, i, code, sh, inputs, c, sx, sy in cases:
         ps = PS30 if sh.major == 3 else PS20
