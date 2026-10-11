@@ -76,6 +76,8 @@ def main(argv=None):
     ap.add_argument('quelle')
     ap.add_argument('ziel')
     ap.add_argument('--name', default='patch-5.MPQ')
+    ap.add_argument('--debug', action='store_true',
+                    help='Testfassung: Licht 5–8 leuchten Magenta statt in ihrer Farbe')
     args = ap.parse_args(argv)
 
     eff = effective_files(args.quelle)
@@ -99,7 +101,7 @@ def main(argv=None):
         changed = 0
         try:
             for v in f.variants:
-                new = lights8.patch_variant_code(v.code)
+                new = lights8.patch_variant_code(v.code, args.debug)
                 if new is not None:
                     v.code = new
                     changed += 1

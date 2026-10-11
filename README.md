@@ -40,8 +40,50 @@ aus seinen eigenen Dateien.
    ein **Ordner** mit dem Namen und Aufbau eines MPQ. Mit `--name` lässt sich ein
    anderer Name wählen.
 
-3. Im Spiel: `/console fixedFunction 0` (Standard), Ort mit vielen Lichtern aufsuchen,
-   z. B. Fackeln in Sturmwind oder Dalaran.
+3. Im Spiel testen, siehe nächster Abschnitt.
+
+## Im Spiel testen
+
+### Vorbereitung
+
+- `Wow.exe` mit Nr. 66 und Nr. 67 patchen.
+- In `WTF\Config.wtf` muss `SET gxApi "d3d9"` stehen (mit DXVK ohnehin) und
+  `fixedFunction` darf nicht `1` sein (`/console fixedFunction 0`, danach Neustart).
+  Unter OpenGL (`gxApi "opengl"`) nimmt das Spiel andere Shader, dann wirkt nichts.
+- Ordner so ablegen, dass es `Data\patch-5.MPQ\Shaders\Vertex\vs_3_0\Diffuse_T1.bls`
+  gibt (nicht doppelt `patch-5.MPQ\patch-5.MPQ`).
+
+### Schritt 1: Testfassung (Magenta)
+
+Mit `--debug` gebaut, leuchten Licht 5–8 nicht in ihrer Farbe, sondern **magenta**.
+Licht 1–4 sehen normal aus. So ist sofort zu sehen, ob alles greift.
+
+```
+python tools/build.py --debug Quelle "C:\WoW\Data"
+```
+
+An einen Ort gehen, an dem viele Lichtquellen dicht beieinander sind (Fackeln,
+Laternen, Kohlebecken), z. B. in Sturmwind, Eisenschmiede an der Großen Schmiede
+oder Dalaran, am besten nachts oder in Innenräumen. Dann die Kamera auf die eigene
+Figur und auf Gebäude in der Nähe richten und langsam herumlaufen.
+
+| Was man sieht | Bedeutung |
+|---|---|
+| Figur, NPCs oder Gebäude bekommen magentafarbene Lichtflecken, die beim Laufen wandern | Alles greift: Ordner wird geladen, die Exe liefert Licht 5–8, die Shader rechnen sie |
+| Alles sieht aus wie immer | Entweder sind dort nicht mehr als 4 Lichter in der Nähe (anderen Ort probieren), oder der Ordner wird nicht geladen (dann den Ordner mit Ladik's MPQ Editor zu einem echten `patch-5.MPQ` packen und nochmal) |
+| Modelle fehlen, sind schwarz, flackern, oder das Spiel stürzt ab | Fehler in den Shadern, bitte mit Screenshot melden |
+
+Der Boden bleibt immer ohne Magenta, er hat eigene Shader und bekommt keine
+Zusatzlichter.
+
+### Schritt 2: richtige Fassung
+
+Die Testfassung durch die normale ersetzen (ohne `--debug` bauen). Zum Vergleich an
+derselben Stelle mit derselben Kamera zwei Bildschirmfotos machen: einmal mit dem
+Ordner, einmal ohne (Ordner z. B. in `_patch-5.MPQ` umbenennen, Spiel neu starten).
+Mit dem Ordner werden Figur und Gebäude von mehr Lichtquellen gleichzeitig
+beleuchtet. Läuft man an einer Reihe Fackeln vorbei, springt das Licht auf der Figur
+seltener an und aus, weil erst das 9. Licht wegfällt statt schon das 5.
 
 ### Ordner statt MPQ
 
@@ -105,7 +147,7 @@ und gezeichnet dieselbe Farbe liefern wie der Emulator.
 - `tools/bls.py` – Lesen/Schreiben der `.bls` (Rundlauf bitgleich über alle Dateien)
 - `tools/sm3.py` – Disassembler und Token-Werkzeug für D3D9-Shader (SM 2/3)
 - `tools/lights8.py` – Zusatzblock für Licht 5–8
-- `tools/build.py` – baut den Ordner `patch-5.MPQ`
+- `tools/build.py` – baut den Ordner `patch-5.MPQ` (`--debug`: Testfassung in Magenta)
 - `tools/emu.py`, `tests/` – Emulator und Tests
 - `docs/PLAN.de.md` – ursprünglicher Plan mit Risiken
 

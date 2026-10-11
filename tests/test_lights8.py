@@ -1,6 +1,6 @@
 """Prüft gepatchte 4-Lichter-Varianten im Emulator.
 
-Aufruf:  python3 tests/test_lights8.py <Shader-Ordner> [...]
+Aufruf:  python3 tests/test_lights8.py [--debug] <Shader-Ordner> [...]
 (ein Ordner mit vs_2_0/ und vs_3_0/ darunter, z. B. <MPQ>/shaders/Vertex)
 
 Test 1: Licht 5–8 leer (Farbe 0, Rest beliebig) -> alle Ausgaben bitgleich
@@ -8,6 +8,8 @@ Test 1: Licht 5–8 leer (Farbe 0, Rest beliebig) -> alle Ausgaben bitgleich
 Test 2: Lichter A in Platz 1–4, Lichter B in Platz 5–8 -> Farbe muss
         Original(A) + Original(B in Platz 1–4) - Original(ohne Lichter)
         sein (Farben klein gewählt, damit nichts sättigt).
+Mit --debug (Testfassung, Licht 5–8 in Magenta): Test 1 wie oben, dazu muss
+Grün bitgleich zum Original mit Licht 1–4 bleiben und Rot/Blau heller werden.
 Beides einmal mit IEEE-Multiplikation und einmal mit der D3D9-Regel 0*x=0.
 """
 
@@ -95,7 +97,7 @@ def color_key(sh):
     raise KeyError('keine Farbausgabe')
 
 
-def check(path, code, new, rng, d3d9):
+def check(path, code, new, rng, d3d9, debug=False):
     orig = emu.Emu(sm3.parse(code), d3d9)
     pat = emu.Emu(sm3.parse(new), d3d9)
     ins = inputs_for(orig.sh, rng)
@@ -124,9 +126,18 @@ def check(path, code, new, rng, d3d9):
     oB = orig.run(cB, ins, N)
     o0 = orig.run(c0, ins, N)
     k = color_key(orig.sh)
-    ref = oA[k] + oB[k] - o0[k]
     if not np.all(np.isfinite(p[k])):
         return 'Test 2: NaN/Inf'
+    if debug:
+        # Testfassung: Licht 5–8 nur Magenta -> Grün bitgleich, Rot/Blau heller
+        if not np.array_equal(p[k][:, 1], oA[k][:, 1]):
+            return 'Test D: Grün verändert'
+        if (p[k][:, [0, 2]] < oA[k][:, [0, 2]]).any():
+            return 'Test D: Rot/Blau dunkler'
+        if (p[k][:, [0, 2]] - oA[k][:, [0, 2]]).max() < 1e-3:
+            return 'Test D: Magenta ohne Wirkung'
+        return None
+    ref = oA[k] + oB[k] - o0[k]
     err = np.abs(p[k][:, :3] - ref[:, :3]).max()
     if err > 1e-4:
         return f'Test 2: Farbabweichung {err:g}'
@@ -139,7 +150,9 @@ def check(path, code, new, rng, d3d9):
     return None
 
 
-def main(dirs):
+def main(args):
+    debug = '--debug' in args
+    dirs = [a for a in args if a != '--debug']
     rng = np.random.default_rng(1234)
     total = fails = 0
     for d in dirs:
@@ -149,12 +162,12 @@ def main(dirs):
             except ValueError:
                 continue
             for i, v in enumerate(f.variants):
-                new = lights8.patch_variant_code(v.code)
+                new = lights8.patch_variant_code(v.code, debug)
                 if new is None:
                     continue
                 for d3d9 in (False, True):
                     total += 1
-                    err = check(path, v.code, new, rng, d3d9)
+                    err = check(path, v.code, new, rng, d3d9, debug)
                     if err:
                         fails += 1
                         print(f'FEHLER {path} Variante {i} d3d9={d3d9}: {err}')

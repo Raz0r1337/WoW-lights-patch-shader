@@ -30,6 +30,8 @@ import struct
 import sm3
 
 C_COLOR, C_POS, C_ATT = 236, 240, 244
+C_DEBUG = 247                                  # nur Testfassung: Magenta per def
+DEBUG_COLOR = (1.0, 0.0, 1.0, 0.0)
 X, Y, Z, W = 0x00, 0x55, 0xAA, 0xFF          # Replikations-Swizzles
 SWZ_ID = 0xE4
 MASK = {'x': 1, 'y': 2, 'z': 4, 'w': 8, 'xyz': 7, 'xyzw': 15}
@@ -178,7 +180,14 @@ def is_four_light(sh: sm3.Shader):
 
 # ------------------------------------------------------------------ Patch
 
-def patch_shader(sh: sm3.Shader, max_temps: int) -> sm3.Shader:
+def def_instr(num, values):
+    bits = struct.unpack('<4I', struct.pack('<4f', *values))
+    return sm3.Instr(81 | (5 << 24), [dst(T_CONST, num)] + list(bits))
+
+
+def patch_shader(sh: sm3.Shader, max_temps: int, debug=False) -> sm3.Shader:
+    """debug=True: Licht 5–8 leuchten statt in ihrer Farbe in Magenta (Testfassung).
+    Leere Plätze (Farbe.w = 0) bleiben auch dann ohne Beitrag."""
     instrs = list(sh.instrs)
 
     def find(pred, what):
@@ -250,12 +259,15 @@ def patch_shader(sh: sm3.Shader, max_temps: int) -> sm3.Shader:
     for j in range(4):
         block.append(ins('rcp', dst(T_TEMP, rL, comp[j]), r(rT, COMP_SWZ[j])))
     block.append(ins('mul', dst(T_TEMP, rK), r(rK), r(rL)))         # ndl * att
+    if debug:
+        for j in range(4):                                          # leerer Platz: w = 0
+            block.append(ins('mul', dst(T_TEMP, rK, comp[j]), r(rK, COMP_SWZ[j]), c(C_COLOR + j, W)))
     for j in range(4):
         block.append(ins('mad', dst(T_TEMP, A, 'xyz', sat and j == 3),
-                         c(C_COLOR + j), r(rK, COMP_SWZ[j]), r(A)))
+                         c(C_DEBUG if debug else C_COLOR + j), r(rK, COMP_SWZ[j]), r(A)))
 
     new_end = sm3.Instr(end.token, [sm3.Param(acc.token & ~(1 << 20))] + end.params[1:])
-    out = []
+    out = [def_instr(C_DEBUG, DEBUG_COLOR)] if debug else []
     for k, i in enumerate(instrs):
         if k == k_p:
             out.append(save_p)
@@ -272,12 +284,12 @@ def patch_shader(sh: sm3.Shader, max_temps: int) -> sm3.Shader:
 LIMITS = {2: (12, 256), 3: (32, 512)}   # Temps, Befehlsslots
 
 
-def patch_variant_code(code: bytes):
+def patch_variant_code(code: bytes, debug=False):
     sh = sm3.parse(code)
     if not sh.is_vs or not is_four_light(sh):
         return None
     temps, slots = LIMITS[sh.major]
-    new = patch_shader(sh, temps)
+    new = patch_shader(sh, temps, debug)
     n = sum(i.slots for i in new.instrs)
     if n > slots:
         raise PatchError(f'{n} Befehlsslots > {slots}')
