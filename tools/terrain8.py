@@ -25,9 +25,10 @@ Formel je Licht wie im Original (Variante 64):
     ndl = sat(dot(L, N)) ; att = rcp(a0 + a1 * d + a2 * d2)
     Summe += ndl * Farbe * att
 
-Ist nur Patch Nr. 66 da, aber nicht der Exe-Teil für den Boden, stehen in
-c236–c250 die Modell-Lichter 5–8 in anderem Format: der Boden würde falsch
-beleuchtet. Ist die Exe gar nicht gepatcht, steht dort 0: Farbe 0 ergibt
+Den Exe-Teil liefert Patch Nr. 69 (St0nys AIO WoW EXE Patcher, Zweig
+st0ny-dev-lights ab 2026-10-12). Hat die Exe einen älteren Stand von Nr. 69
+ohne den Boden-Teil, stehen in c236–c250 die Modell-Lichter 5–8 in anderem
+Format: der Boden würde falsch beleuchtet. Ist die Exe gar nicht gepatcht, steht dort 0: Farbe 0 ergibt
 keinen Beitrag, und der Nenner der Abschwächung wird per `max` auf EPS
 (def c251.x) begrenzt, damit keine Division durch 0 entsteht. Das Ergebnis
 ist dann bitgleich zum Original.

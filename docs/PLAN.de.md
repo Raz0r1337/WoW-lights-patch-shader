@@ -13,7 +13,7 @@ Stand: 2026-10-11. Grundlage: `Uebergabe_Lichter_Shader.md`, Zweig
 
 ## 1. Kurzfassung
 
-- Die Exe-Seite (Nr. 66) ist fertig und liefert Licht 5–8 nach VS `c236–c246`.
+- Die Exe-Seite (damals Nr. 66, seit 2026-10-12 Nr. 69) ist fertig und liefert Licht 5–8 nach VS `c236–c246`.
   Es fehlt nur Shader-Code, der diese Register liest.
 - Geändert werden nur die **4-Lichter-Varianten** (9, 19, …, 89) der
   Modell-Shader `Diffuse_*.bls`, in **vs_3_0 und vs_2_0**. Danach die
@@ -103,7 +103,7 @@ Der Zusatzblock übernimmt genau die Formel des Originals.
    neuen `.bls` erzeugt (vs_3_0 und vs_2_0) und sie in einen Ordner
    `patch-5.MPQ\` mit MPQ-Innenaufbau legt (siehe Abschnitt 3a).
 7. **Doku** im neuen Arbeitsrepo (README, DE und EN gleich). Im Patcher-Repo
-   bei Nr. 66 höchstens später ein Verweis, nur nach Freigabe.
+   bei Nr. 69 höchstens später ein Verweis, nur nach Freigabe.
 
 ### 3a. Ordner statt MPQ: was zu klären ist
 
@@ -120,7 +120,7 @@ Der Zusatzblock übernimmt genau die Formel des Originals.
   MPQ daraus packen, (b) Nr. 22, (c) ein kleiner eigener Exe-Patch, der
   Ordner mit MPQ-Namen als Archiv behandelt. (c) wäre Arbeit im Patcher-Repo
   und nur nach Freigabe.
-8. **Spieltest** durch den User: `fixedFunction 0`, Nr. 66 + 67 an, Ort mit
+8. **Spieltest** durch den User: `fixedFunction 0`, Nr. 69 + 70 an, Ort mit
    vielen Fackeln (Sturmwind, Dalaran). Zum Gegencheck vorher einmal
    `fixedFunction 1`: dort muss die Exe-Seite schon 8 Lichter zeigen.
 

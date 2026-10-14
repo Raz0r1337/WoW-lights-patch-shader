@@ -13,8 +13,8 @@ Der Boden geht einen eigenen Weg als Modelle und Gebäude:
   den Varianten 64–127 **höchstens 3 Punktlichter** je Bodenstück (Varianten 0–63 keine).
   Ungerade Varianten haben zusätzlich Schattenkarten (c37–c48).
 - Die Exe füllt dafür **eigene Konstanten c28–c36**, nicht c17–c27 wie bei Modellen.
-  Lichter-Patch Nr. 66 ändert an dieser Stelle nichts. Jedes Bodenstück bekommt also
-  weiter nur die 3 nächsten Lichter. Das ist das Verhalten der Original-Exe; mit 8 Feuern
+  Der Modell-Teil des Lichter-Patches (heute Nr. 69) ändert an dieser Stelle nichts.
+  Jedes Bodenstück bekommt also weiter nur die 3 nächsten Lichter. Das ist das Verhalten der Original-Exe; mit 8 Feuern
   fällt es nur stärker auf.
 
 ## Format im Shader (c28–c36, je Licht 3 Vektoren)
@@ -51,7 +51,7 @@ Funktion **VA 0x7D0050** (Dateioffset 0x3CF450) baut die Boden-Konstanten im Sha
 | VA | Was |
 |---|---|
 | 0x7D0082 `call 0x790440` | lokale Lichtliste (CM2Lighting, 0xD4 Byte, auf dem Stack bei `[ebp-0x104]`) leeren, Position des Bodenstücks aus `chunk+0x24` |
-| 0x7D0094 `call 0x81E400` | alle Lichter des Kartenlichtmanagers (`[0xCD754C]`, Liste ab `+0x20`, Nächster `+0x68`) per **AddLight 0x834F60** anbieten; AddLight behält die 4 nächsten (mit Patch 66: Rest in die Zusatzliste) |
+| 0x7D0094 `call 0x81E400` | alle Lichter des Kartenlichtmanagers (`[0xCD754C]`, Liste ab `+0x20`, Nächster `+0x68`) per **AddLight 0x834F60** anbieten; AddLight behält die 4 nächsten (mit Nr. 69: Rest in die Zusatzliste) |
 | 0x7D00A2 `call 0x7B7BD0` | weitere Lichter des Bodenstücks (ruft ebenfalls AddLight) |
 | 0x7D00BF `mov [ebp-0x1C], 3` | **Schleife über 3 Lichter** |
 | 0x7D00E0 `call 0x8349E0` | GetLight(index, &pos, &farbe, &abschw) → 1 wenn vorhanden; liest Licht `+0x0C` Position, `+0x3C` Farbe, `+0x54` Abschwächung |
@@ -66,7 +66,20 @@ Warum die Schleife nicht einfach auf 8 gestellt werden kann: hinter c36 liegen a
 0xD252F0 die Schattenmatrizen c37–c48. Licht 4–8 brauchen einen eigenen Puffer und
 einen eigenen Upload.
 
-## Vorschlag für den Exe-Teil (AIO-Patcher, Patch Nr. 66 erweitern)
+## Exe-Teil: Vorschlag (2026-10-11) und Umsetzung im Patcher (2026-10-12)
+
+Umgesetzt ist der Teil im Patcher-Zweig `st0ny-dev-lights` (Commit `a768c2c`, „No. 69
+more lights: ground gets lights 4-8 too“) als fester Bestandteil von Nr. 69, Stand
+2026-10-14 noch nicht in `st0ny-dev`/`st0ny-main` und im Spiel ungetestet. Höhle
+`cave_ter` vor dem Original-Upload (Hook bei 0x7D0292, 6 Byte `mov ecx,[0xC5DF88]`,
+Rücksprung 0x7D0298): nur bei mindestens 251 VS-Konstanten (`[CGxDevice+0x2E0]`); fünf
+Plätze à 0x30 Byte werden geleert (Abschwächung x = 1), Platz 0 bekommt Licht 4 aus der
+lokalen Liste (wenn mehr als 3 Lichter), Platz 1–4 die Zusatzlichter aus dem
+Ring-Eintrag der Liste; je Platz Position minus Kamera (w = 1), Farbe (w = 0),
+Abschwächung (w = 0); Upload `vtable[+0x118](0, 236, Puffer, 15)` → c236–c250.
+Das entspricht dem Vorschlag unten Punkt für Punkt.
+
+### Vorschlag vom 2026-10-11
 
 1. Nach der 3er-Schleife (z. B. Einsprung bei 0x7D0171, 6 Byte `mov esi,[ebp+8]` +
    `fld`) oder vor dem Upload (0x7D0292, 6 Byte `mov ecx,[0xC5DF88]`) eine Höhle:
@@ -80,9 +93,9 @@ einen eigenen Upload.
    - Puffer 15 Vektoren (5 Lichter × 3), dann
      `CGxDevice::vtable[+0x118](0, 236, Puffer, 15)` → **c236–c250**.
    - Nur wenn `[CGxDevice+0x2E0]` ≥ 251 (DXVK meldet 256; vs_2_0 erlaubt bis c255).
-2. Den Boden-Teil fest an Nr. 66 koppeln (nicht einzeln aktivierbar): Nr. 66 und
+2. Den Boden-Teil fest an Nr. 69 koppeln (nicht einzeln aktivierbar): Modell-Teil und
    Boden-Teil schreiben beide ab c236, jeder Shader liest nur direkt nach seinem
-   eigenen Upload. Gäbe es den Boden-Teil ohne Nr. 66, läsen die neuen Modell-Shader
+   eigenen Upload. Gäbe es den Boden-Teil ohne den Modell-Teil, läsen die neuen Modell-Shader
    Bodenlichter in falschem Format. Eine Prüfung auf mindestens 251 VS-Konstanten
    reicht für beide Teile.
 3. Variantenwahl unverändert lassen: Die Exe wählt die Lichter-Varianten, sobald
@@ -102,6 +115,8 @@ Der Nenner der Abschwächung wird per `max` auf `c251.x` (= 1e-6, eigener `def`)
 begrenzt; bei gar nicht gepatchter Exe (c236–c250 = 0) ist das Ergebnis so bitgleich
 zum Original (Test 3 in `test_terrain8.py`, `d3d9_check.py` mit Nullen).
 
-**Wichtig:** Diese Boden-Shader erst einsetzen, wenn der Exe-Teil da ist. Ohne ihn
-lesen sie in c236–c250 Reste der Modell-Lichter (anderes Format) und der Boden wird
-falsch beleuchtet. Darum baut das Werkzeug den Boden nur mit `--boden`.
+**Wichtig:** Diese Boden-Shader nur mit einer Exe einsetzen, deren Nr. 69 den
+Boden-Teil hat (Patcher-Stand ab 2026-10-12). Mit einem älteren Stand von Nr. 69 lesen
+sie in c236–c250 Reste der Modell-Lichter (anderes Format) und der Boden wird falsch
+beleuchtet. Bis der Spieltest den Boden bestätigt, baut das Werkzeug ihn nur mit
+`--boden`.

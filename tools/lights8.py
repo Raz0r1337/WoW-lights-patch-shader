@@ -1,6 +1,6 @@
 """Erweitert die 4-Lichter-Varianten der WoW-Vertex-Shader um Licht 5–8.
 
-Patch Nr. 66 (St0nys AIO WoW EXE Patcher) lädt Licht 5–8 im selben Format
+Patch Nr. 69 (St0nys AIO WoW EXE Patcher, bis 2026-10-11 Nr. 66) lädt Licht 5–8 im selben Format
 wie Licht 1–4 in die Vertex-Shader-Konstanten:
 
     c236–c239  Farbe Licht 5–8 (rgb; freier Platz = 0)

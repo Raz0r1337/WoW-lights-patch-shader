@@ -1,16 +1,16 @@
 # WoW-lights-patch-shader
 
 Werkzeug für WoW 3.3.5a (12340): baut aus den eigenen Original-Shadern Vertex-Shader,
-die bis zu **8 Punktlichter** darstellen. Gegenstück zu Patch **Nr. 66 „Mehr Lichter:
-8 statt 4 Punktlichter“** aus St0nys AIO WoW EXE Patcher. Ohne neue Shader liefert die
-Exe Licht 5–8 zwar an die Grafik, sichtbar wird es aber nicht.
+die bis zu **8 Punktlichter** darstellen. Gegenstück zu Patch **Nr. 69 „Mehr Lichter:
+8 statt 4 Punktlichter“** aus St0nys AIO WoW EXE Patcher (bis 2026-10-11 Nr. 66). Ohne
+neue Shader liefert die Exe Licht 5–8 zwar an die Grafik, sichtbar wird es aber nicht.
 
 Das Repo enthält **keine Blizzard-Dateien**. Die neuen Shader entstehen beim Spieler
 aus seinen eigenen Dateien.
 
 ## Voraussetzungen
 
-- `Wow.exe` 3.3.5a mit Nr. 66, zum Testen am besten auch Nr. 67 („Lichter bleiben an,
+- `Wow.exe` 3.3.5a mit Nr. 69, zum Testen am besten auch Nr. 70 („Lichter bleiben an,
   wenn ihre Quelle außerhalb des Bildes ist“).
 - Python 3 (nur Standardbibliothek). Für die Tests zusätzlich `numpy`.
 
@@ -46,7 +46,7 @@ aus seinen eigenen Dateien.
 
 ### Vorbereitung
 
-- `Wow.exe` mit Nr. 66 und Nr. 67 patchen.
+- `Wow.exe` mit Nr. 69 und Nr. 70 patchen.
 - In `WTF\Config.wtf` muss `SET gxApi "d3d9"` stehen (mit DXVK ohnehin) und
   `fixedFunction` darf nicht `1` sein (`/console fixedFunction 0`, danach Neustart).
   Unter OpenGL (`gxApi "opengl"`) nimmt das Spiel andere Shader, dann wirkt nichts.
@@ -88,14 +88,14 @@ Dann ist entweder die Exe-Seite nicht aktiv oder die neuen Shader werden nicht
 geladen. Zwei Tests trennen das:
 
 **Exe-Seite ohne Shader prüfen.** Im Spiel `/console fixedFunction 1` eingeben und
-das Spiel neu starten. In diesem Modus arbeitet das Spiel ohne Shader, und Nr. 66 gibt
+das Spiel neu starten. In diesem Modus arbeitet das Spiel ohne Shader, und Nr. 69 gibt
 dem Grafikgerät 8 Lichtplätze statt 4. Dann an einem dunklen Ort nacheinander
 Lagerfeuer um die Figur stellen (Kochkunst, „Einfaches Lagerfeuer“):
 
 | Was man sieht | Bedeutung |
 |---|---|
-| Ab dem 4. Feuer geht eins wieder aus (höchstens 3 Feuer leuchten gleichzeitig) | Nr. 66 ist nicht aktiv (Original: 4 Plätze, einer davon für die Sonne) |
-| Bis zu 7 Feuer leuchten gleichzeitig auf die Figur | Nr. 66 arbeitet, die Exe liefert die Lichter |
+| Ab dem 4. Feuer geht eins wieder aus (höchstens 3 Feuer leuchten gleichzeitig) | Nr. 69 ist nicht aktiv (Original: 4 Plätze, einer davon für die Sonne) |
+| Bis zu 7 Feuer leuchten gleichzeitig auf die Figur | Nr. 69 arbeitet, die Exe liefert die Lichter |
 
 Danach wieder `/console fixedFunction 0` und neu starten.
 
@@ -175,7 +175,7 @@ Prüfen lässt sich das unter DXVK mit `DXVK_SHADER_DUMP_PATH`: Die neuen Shader
   Summe += Farbe * ndl * att
   ```
 
-  mit den Registern, die Nr. 66 belegt: `c236–c239` Farbe, `c240–c243` Position,
+  mit den Registern, die Nr. 69 belegt: `c236–c239` Farbe, `c240–c243` Position,
   `c244–c246` Abschwächung. Die Sättigung der Summe wandert ans Ende des Zusatzblocks.
   Der Nenner der Abschwächung wird vor dem Kehrwert per `max` auf `c247.w` (= 1e-6,
   eigener `def`) begrenzt, damit bei nie gesetzten Registern keine Division durch 0
@@ -188,7 +188,7 @@ Prüfen lässt sich das unter DXVK mit `DXVK_SHADER_DUMP_PATH`: Die neuen Shader
 
 ### Ohne Exe-Patch
 
-Sind die neuen Shader da, aber die Exe hat Patch Nr. 66 nicht, schreibt die Exe nie in
+Sind die neuen Shader da, aber die Exe hat Patch Nr. 69 nicht, schreibt die Exe nie in
 `c236`–`c246`; dort steht dann 0 (unter DXVK sicher, da der Konstantenpuffer mit 0
 beginnt; unter Windows-D3D9 nach Dokumentation ebenso). Farbe 0 heißt: Licht 5–8
 tragen nichts bei, die Shader liefern bitgleich das Original mit 4 Lichtern. Ohne die
@@ -197,22 +197,23 @@ nach D3D9-Regel 0 (DXVK bildet die Regel nach, andere Hardware nicht sicher). Mi
 Begrenzung ist der Fall unabhängig davon sauber. Geprüft: `test_lights8.py` Test 3 und
 `d3d9_check.py` (jede Variante zusätzlich mit `c236`–`c250` = 0).
 
-Umgekehrt (Exe mit Nr. 66, Original-Shader): Licht 1–4 schreibt weiterhin die
+Umgekehrt (Exe mit Nr. 69, Original-Shader): Licht 1–4 schreibt weiterhin die
 unveränderte Original-Funktion nach `c17`–`c27`, und AddLight behält dieselben 4
 nächsten Lichter wie ohne Patch. Die Exe lädt zusätzlich `c236`–`c246` hoch, was die
 Original-Shader nicht lesen. Modelle, Gebäude und Boden sehen also aus wie im Original;
-nur `fixedFunction 1` zeigt 8 Lichter. Nr. 67 („Lichter bleiben an“) ist ein eigener,
+nur `fixedFunction 1` zeigt 8 Lichter. Nr. 70 („Lichter bleiben an“) ist ein eigener,
 standardmäßig ausgeschalteter Patch: Lichter bleiben aktiv, wenn ihr Modell nicht im
 Bild ist. Das wirkt mit und ohne neue Shader gleich und hat mit der Zahl der Lichter
 nichts zu tun.
 
 Der Boden-Shader aus `--boden` ist bei gar nicht gepatchter Exe aus demselben Grund
-harmlos (eigener `def c251`). Ist aber Nr. 66 da und nur der Exe-Teil für den Boden
-fehlt, stehen in `c236`–`c250` die Modell-Lichter in anderem Format: der Boden wird
-falsch beleuchtet. Darum den Boden nur zusammen mit dem Exe-Teil einsetzen.
+harmlos (eigener `def c251`). Ist aber Nr. 69 da und der Exe-Teil für den Boden
+fehlt (Stand des Patchers vor dem 2026-10-12), stehen in `c236`–`c250` die
+Modell-Lichter in anderem Format: der Boden wird falsch beleuchtet. Darum den Boden
+nur mit einer Exe einsetzen, deren Nr. 69 den Boden-Teil hat.
 
-Mit Nr. 66 **und** Exe-Teil für den Boden sind alle Kombinationen sauber, weil jeder
-Shader `c236` ff. nur direkt nach seinem eigenen Upload liest (Nr. 66 lädt vor jedem
+Mit Nr. 69 **samt** Boden-Teil sind alle Kombinationen sauber, weil jeder Shader
+`c236` ff. nur direkt nach seinem eigenen Upload liest (Nr. 69 lädt vor jedem
 Modell, der Boden-Teil vor jedem Bodenstück):
 
 | Shader im Ordner | Modelle, Gebäude | Boden |
@@ -221,10 +222,11 @@ Modell, der Boden-Teil vor jedem Bodenstück):
 | neu, ohne `--boden` | 8 Lichter | 3 Lichter (Original) |
 | neu, mit `--boden` | 8 Lichter | 8 Lichter |
 
-Empfehlung für den Patcher: den Boden-Teil fest in Nr. 66 einbauen, nicht als eigenen
-Patch. Gäbe es den Boden-Teil ohne Nr. 66, läsen die neuen Modell-Shader in
-`c236`–`c246` die Bodenlichter in falschem Format. Sobald beide zusammen in der Exe
-sind, wird der Boden zum Standard beim Bauen.
+So ist es im Patcher umgesetzt (Zweig `st0ny-dev-lights`, seit 2026-10-12): Der
+Boden-Teil ist fester Bestandteil von Nr. 69, nicht einzeln wählbar. Gäbe es ihn ohne
+den Modell-Teil, läsen die neuen Modell-Shader in `c236`–`c246` die Bodenlichter in
+falschem Format. Sobald der Spieltest die Boden-Fassung bestätigt, wird der Boden zum
+Standard beim Bauen.
 
 ## Tests
 
@@ -258,22 +260,24 @@ und gezeichnet dieselbe Farbe liefern wie der Emulator.
 - `tools/build.py` – baut den Ordner `patch-5.MPQ` (`--debug`: Licht 5–8 in Magenta, `--ladetest`: alle Lichter in Magenta, `--boden`: auch den Boden)
 - `tools/emu.py`, `tests/` – Emulator und Tests (`test_lights8.py`, `test_terrain8.py`, `d3d9_check.py`)
 - `docs/PLAN.de.md` – ursprünglicher Plan mit Risiken
-- `docs/BODEN.de.md` – Boden: Analyse, Exe-Stellen und Vorschlag für den Exe-Teil
+- `docs/BODEN.de.md` – Boden: Analyse, Exe-Stellen, Exe-Teil des Patchers
 
 ## Boden (Terrain)
 
 Der Boden geht einen eigenen Weg: `Terrain.bls` rechnet je Bodenstück höchstens
 3 Punktlichter aus eigenen Konstanten (c28–c36), die die Exe füllt (VA `0x7D0050`).
-Der Lichter-Patch Nr. 66 ändert daran nichts, darum bekommt der Boden weiter nur
-3 der 8 Lichter und an den Kanten der Bodenstücke sieht man Sprünge (so auch im
-Original). `tools/terrain8.py` erweitert die Boden-Varianten auf 8 Lichter, die
+Der Modell-Teil des Lichter-Patches ändert daran nichts, darum bekam der Boden zunächst
+weiter nur 3 der 8 Lichter und an den Kanten der Bodenstücke sieht man Sprünge (so auch
+im Original). `tools/terrain8.py` erweitert die Boden-Varianten auf 8 Lichter, die
 Licht 4–8 aus c236–c250 lesen (je Licht Position, Farbe, Abschwächung wie c28–c36).
-Das wirkt erst, wenn ein Exe-Teil diese Konstanten liefert; Stellen, Format und
-Vorschlag stehen in [docs/BODEN.de.md](docs/BODEN.de.md).
+Diese Konstanten liefert der Boden-Teil von Nr. 69 (Patcher-Zweig `st0ny-dev-lights`
+seit 2026-10-12, im Spiel noch ungetestet); Stellen und Format stehen in
+[docs/BODEN.de.md](docs/BODEN.de.md).
 
-**Ohne diesen Exe-Teil die Boden-Shader nicht einsetzen**: Sie lesen dann Reste
-der Modell-Lichter und der Boden wird falsch beleuchtet. Darum werden sie nur mit
-`--boden` gebaut:
+**Ohne diesen Exe-Teil die Boden-Shader nicht einsetzen** (Exe mit einem Stand von
+Nr. 69 vor dem 2026-10-12): Sie lesen dann Reste der Modell-Lichter und der Boden wird
+falsch beleuchtet. Bis der Spieltest den Boden bestätigt, werden sie nur mit `--boden`
+gebaut:
 
 ```
 python3 tools/build.py QUELLE ZIEL --boden
