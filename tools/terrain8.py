@@ -16,7 +16,7 @@ dritte Lichtaddition fünf weitere Lichter im selben Format aus
 
 Diese Konstanten muss ein Exe-Teil liefern (siehe docs/BODEN.de.md). Ohne
 ihn stehen dort Reste der Modell-Lichter (anderes Format), und der Boden
-wird falsch beleuchtet. Darum baut build.py den Boden nur mit --boden.
+wird falsch beleuchtet. Dafür lässt build.py den Boden mit --ohne-boden weg.
 
 Formel je Licht wie im Original (Variante 64):
 

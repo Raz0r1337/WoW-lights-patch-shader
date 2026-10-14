@@ -70,7 +70,8 @@ einen eigenen Upload.
 
 Umgesetzt ist der Teil im Patcher-Zweig `st0ny-dev-lights` (Commit `a768c2c`, „No. 69
 more lights: ground gets lights 4-8 too“) als fester Bestandteil von Nr. 69, Stand
-2026-10-14 noch nicht in `st0ny-dev`/`st0ny-main` und im Spiel ungetestet. Höhle
+2026-10-14 noch nicht in `st0ny-dev`/`st0ny-main`. **Spieltest 2026-10-14 (Sascha):
+keine Fehler, sieht gut aus.** Höhle
 `cave_ter` vor dem Original-Upload (Hook bei 0x7D0292, 6 Byte `mov ecx,[0xC5DF88]`,
 Rücksprung 0x7D0298): nur bei mindestens 251 VS-Konstanten (`[CGxDevice+0x2E0]`); fünf
 Plätze à 0x30 Byte werden geleert (Abschwächung x = 1), Platz 0 bekommt Licht 4 aus der
@@ -156,7 +157,8 @@ mit derselben Formel wie Licht 1–3 und addieren das Ergebnis vor dem `min … 
 Vertexposition und Normale werden vorher in freie Temps gesichert (Licht 3
 überschreibt sie in manchen Varianten). Prüfung: `tests/test_terrain8.py` (Emulator,
 leere Plätze bitgleich, Lichter in 4–8 = Überlagerung) und `tests/d3d9_check.py`
-(Wine-D3D9). Bauen mit `python3 tools/build.py QUELLE ZIEL --boden`.
+(Wine-D3D9). Seit 2026-10-14 baut `tools/build.py` den Boden standardmäßig mit;
+`--ohne-boden` lässt ihn weg.
 
 Der Nenner der Abschwächung wird per `max` auf `c251.x` (= 1e-6, eigener `def`)
 begrenzt; bei gar nicht gepatchter Exe (c236–c250 = 0) ist das Ergebnis so bitgleich
@@ -165,5 +167,4 @@ zum Original (Test 3 in `test_terrain8.py`, `d3d9_check.py` mit Nullen).
 **Wichtig:** Diese Boden-Shader nur mit einer Exe einsetzen, deren Nr. 69 den
 Boden-Teil hat (Patcher-Stand ab 2026-10-12). Mit einem älteren Stand von Nr. 69 lesen
 sie in c236–c250 Reste der Modell-Lichter (anderes Format) und der Boden wird falsch
-beleuchtet. Bis der Spieltest den Boden bestätigt, baut das Werkzeug ihn nur mit
-`--boden`.
+beleuchtet. Für so eine Exe mit `--ohne-boden` bauen.

@@ -12,9 +12,10 @@ ZIEL    Hier entsteht ZIEL/<name>/Shaders/Vertex/vs_2_0|vs_3_0/*.bls.
         Für das Spiel ist ZIEL der Data-Ordner.
 
 Es werden nur Dateien geschrieben, die sich ändern (Modell- und Gebäude-
-Shader mit 4-Lichter-Varianten), und nur für vs_2_0 und vs_3_0.
-Mit --boden zusätzlich Terrain.bls (Boden, 3 -> 8 Lichter); das setzt den
-Exe-Teil für den Boden voraus, siehe docs/BODEN.de.md.
+Shader mit 4-Lichter-Varianten sowie Terrain.bls, Boden 3 -> 8 Lichter), und
+nur für vs_2_0 und vs_3_0. Der Boden setzt den Exe-Teil für den Boden voraus
+(Patch Nr. 69 ab 2026-10-12, siehe docs/BODEN.de.md); --ohne-boden lässt
+Terrain.bls weg, etwa für eine Exe mit einem älteren Stand des Patches.
 """
 
 import argparse
@@ -84,9 +85,10 @@ def main(argv=None):
                    help='Testfassung: Licht 5–8 leuchten Magenta statt in ihrer Farbe')
     g.add_argument('--ladetest', action='store_const', const='ladetest', dest='debug',
                    help='Ladetest: alle Lichter 1–8 leuchten Magenta (zeigt, ob die Shader geladen werden)')
-    ap.add_argument('--boden', action='store_true',
-                    help='auch den Boden-Shader (Terrain.bls) auf 8 Lichter erweitern. '
-                         'NUR mit dem passenden Exe-Teil benutzen (siehe docs/BODEN.de.md)')
+    ap.add_argument('--ohne-boden', action='store_false', dest='boden',
+                    help='den Boden-Shader (Terrain.bls) nicht erweitern, nur Modelle und Gebäude '
+                         '(für eine Exe, deren Patch Nr. 69 den Boden-Teil noch nicht hat)')
+    ap.add_argument('--boden', action='store_true', dest='boden', help=argparse.SUPPRESS)  # alter Schalter, heute Standard
     args = ap.parse_args(argv)
 
     eff = effective_files(args.quelle)

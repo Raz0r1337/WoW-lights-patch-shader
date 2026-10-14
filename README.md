@@ -142,6 +142,10 @@ klein, da ein Lagerfeuer nur wenige Meter weit leuchtet. Nichts fehlt, nichts is
 schwarz. Deutlicher wird der Unterschied bei einer Figur, die zwischen mehr als vier
 nahen Lichtquellen steht, oder bei Fackelreihen in Städten.
 
+Mit dem Boden (seit 2026-10-14 Standard, Exe mit Nr. 69 ab 2026-10-12): Spieltest
+ohne Fehler, der Boden wird von allen acht Feuern beleuchtet statt von dreien je
+Bodenstück.
+
 ### Ordner statt MPQ
 
 Der Client öffnet einen Ordner mit MPQ-Namen wie ein Archiv. Im Spieltest (2026-10-11)
@@ -206,7 +210,7 @@ standardmäßig ausgeschalteter Patch: Lichter bleiben aktiv, wenn ihr Modell ni
 Bild ist. Das wirkt mit und ohne neue Shader gleich und hat mit der Zahl der Lichter
 nichts zu tun.
 
-Der Boden-Shader aus `--boden` ist bei gar nicht gepatchter Exe aus demselben Grund
+Der Boden-Shader ist bei gar nicht gepatchter Exe aus demselben Grund
 harmlos (eigener `def c251`). Ist aber Nr. 69 da und der Exe-Teil für den Boden
 fehlt (Stand des Patchers vor dem 2026-10-12), stehen in `c236`–`c250` die
 Modell-Lichter in anderem Format: der Boden wird falsch beleuchtet. Darum den Boden
@@ -219,14 +223,13 @@ Modell, der Boden-Teil vor jedem Bodenstück):
 | Shader im Ordner | Modelle, Gebäude | Boden |
 |---|---|---|
 | Original | 4 Lichter (Original) | 3 Lichter (Original) |
-| neu, ohne `--boden` | 8 Lichter | 3 Lichter (Original) |
-| neu, mit `--boden` | 8 Lichter | 8 Lichter |
+| neu, mit `--ohne-boden` | 8 Lichter | 3 Lichter (Original) |
+| neu (Standard) | 8 Lichter | 8 Lichter |
 
 So ist es im Patcher umgesetzt (Zweig `st0ny-dev-lights`, seit 2026-10-12): Der
 Boden-Teil ist fester Bestandteil von Nr. 69, nicht einzeln wählbar. Gäbe es ihn ohne
 den Modell-Teil, läsen die neuen Modell-Shader in `c236`–`c246` die Bodenlichter in
-falschem Format. Sobald der Spieltest die Boden-Fassung bestätigt, wird der Boden zum
-Standard beim Bauen.
+falschem Format. Seit dem Spieltest vom 2026-10-14 ist der Boden Standard beim Bauen.
 
 ## Tests
 
@@ -256,8 +259,8 @@ und gezeichnet dieselbe Farbe liefern wie der Emulator.
 - `tools/bls.py` – Lesen/Schreiben der `.bls` (Rundlauf bitgleich über alle Dateien)
 - `tools/sm3.py` – Disassembler und Token-Werkzeug für D3D9-Shader (SM 2/3)
 - `tools/lights8.py` – Zusatzblock für Licht 5–8 (Modelle, Gebäude)
-- `tools/terrain8.py` – Boden (Terrain.bls) von 3 auf 8 Lichter, nur mit Exe-Teil (siehe unten)
-- `tools/build.py` – baut den Ordner `patch-5.MPQ` (`--debug`: Licht 5–8 in Magenta, `--ladetest`: alle Lichter in Magenta, `--boden`: auch den Boden)
+- `tools/terrain8.py` – Boden (Terrain.bls) von 3 auf 8 Lichter (siehe unten)
+- `tools/build.py` – baut den Ordner `patch-5.MPQ` (`--debug`: Licht 5–8 in Magenta, `--ladetest`: alle Lichter in Magenta, `--ohne-boden`: Boden weglassen)
 - `tools/emu.py`, `tests/` – Emulator und Tests (`test_lights8.py`, `test_terrain8.py`, `d3d9_check.py`)
 - `docs/PLAN.de.md` – ursprünglicher Plan mit Risiken
 - `docs/BODEN.de.md` – Boden: Analyse, Exe-Stellen, Exe-Teil des Patchers
@@ -271,18 +274,20 @@ weiter nur 3 der 8 Lichter und an den Kanten der Bodenstücke sieht man Sprünge
 im Original). `tools/terrain8.py` erweitert die Boden-Varianten auf 8 Lichter, die
 Licht 4–8 aus c236–c250 lesen (je Licht Position, Farbe, Abschwächung wie c28–c36).
 Diese Konstanten liefert der Boden-Teil von Nr. 69 (Patcher-Zweig `st0ny-dev-lights`
-seit 2026-10-12, im Spiel noch ungetestet); Stellen und Format stehen in
-[docs/BODEN.de.md](docs/BODEN.de.md).
+seit 2026-10-12); Stellen, Format und die lesende Prüfung des Exe-Teils stehen in
+[docs/BODEN.de.md](docs/BODEN.de.md). Spieltest 2026-10-14 (Sascha, acht Lagerfeuer):
+keine Fehler, der Boden wird von allen Feuern beleuchtet. Seitdem baut das Werkzeug
+den Boden standardmäßig mit.
 
 **Ohne diesen Exe-Teil die Boden-Shader nicht einsetzen** (Exe mit einem Stand von
 Nr. 69 vor dem 2026-10-12): Sie lesen dann Reste der Modell-Lichter und der Boden wird
-falsch beleuchtet. Bis der Spieltest den Boden bestätigt, werden sie nur mit `--boden`
-gebaut:
+falsch beleuchtet. Für so eine Exe den Boden weglassen:
 
 ```
-python3 tools/build.py QUELLE ZIEL --boden
-python3 tests/test_terrain8.py QUELLE/patch.MPQ/Shaders/Vertex
+python3 tools/build.py QUELLE ZIEL --ohne-boden
 ```
+
+Test der Boden-Shader: `python3 tests/test_terrain8.py QUELLE/patch.MPQ/Shaders/Vertex`.
 
 ## Bekannt
 
