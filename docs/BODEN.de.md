@@ -79,6 +79,53 @@ Ring-Eintrag der Liste; je Platz Position minus Kamera (w = 1), Farbe (w = 0),
 Abschwächung (w = 0); Upload `vtable[+0x118](0, 236, Puffer, 15)` → c236–c250.
 Das entspricht dem Vorschlag unten Punkt für Punkt.
 
+### Lesende Prüfung des Exe-Teils (2026-10-14)
+
+Eigene Byte-Lesung plus zwei unabhängige Gegenprüfungen (Bytes/Sprünge und
+Format/Semantik, beide gegen die Exe, nicht nur gegen die Kommentare des Patchers).
+Ergebnis: **keine Abweichung, die den Spieltest betrifft.** Im Einzelnen bestätigt:
+
+- Sektion `.lght` zählt genau 0x7B4 Byte, `cave_ter` liegt bei +0x680, `ct_put` bei
+  +0x757; alle rel8/rel32-Sprünge und Calls treffen ihre Ziele. Der Hook ersetzt genau
+  die 6 Byte `mov ecx,[0xC5DF88]` bei 0x7D0292; 0x7D0298 ist eine Befehlsgrenze, kein
+  Sprung in `.text` zielt dazwischen. Der Code ab 0x7D0298 erwartet nur ecx (die Höhle
+  lädt es nach `popad` neu), keine Flags; FPU-Tiefe am Hook ist 0.
+- Puffer: TBUF 5 × 0x30 Byte bei +0x340–0x42F, keine Überlappung mit Ring-Zeigern,
+  EXTBUF (+0x40) oder Gx-Plätzen (+0x100, 8 × 0x48).
+- Struktur der lokalen Liste (aus GetLight 0x8349E0 und AddLight 0x834F60): Zeiger bei
+  +0x84..+0x90 (aufsteigend nach Abstand), Anzahl bei +0xA4. `[ecx+0x90]` ist also das
+  4. Licht, der Vergleich `Anzahl > 3` passt.
+- `vtable+0x118` (ShaderConstantsSet 0x6833E0) nimmt (Ziel, Startregister, Daten,
+  Anzahl); Original (0, 0, 0xD250A0, 0x25) und Höhle (0, 0xEC, TBUF, 0xF) in derselben
+  Reihenfolge → c236–c250. Schattenpuffer 256 Vektoren, Upload zur GPU erst beim
+  Zeichnen als ein Bereich [min..max].
+- `ct_put`: +0 Position minus Kamera (dieselben Globals 0xCD8F5C/60/64 wie das
+  Original bei 0x7D00EC), w = 1; +0x10 Farbe (+0x3C..), w = 0; +0x20 Abschwächung
+  (+0x54..), w = 0. Leere Plätze wie im Original (0x7D0138–0x7D015F): alles 0,
+  Abschwächung x = 1; die Löschschleife läuft je Bodenstück über alle 5 Plätze.
+- Gate: `[dev+0x2E0]` ist `D3DCAPS9.MaxVertexShaderConst`; 236 + 15 = 251 ist die
+  exakte Grenze und nötig, weil der verzögerte Upload den ganzen Dirty-Bereich ohne
+  eigene Klemmung schickt (ohne Gate würde auf einer Karte mit weniger Konstanten der
+  Block c0–c250 samt c28–c36 abgewiesen).
+- Die Variantenwahl 0x79E470 hat nur den Aufrufer 0x7D027C: jedes Zeichnen des Bodens
+  mit Lichtern geht durch den Hook. Zwischen Höhle und Zeichnen schreibt nichts mehr in
+  c236 ff.; Modelle laden c236–c246 vor jedem Zeichnen mit Lichtern neu.
+- `get_entry`: Das Wort bei CM2Lighting+0x16 setzt nur `alloc_entry` (über AddLight);
+  die lokale Liste wird bei 0x790440 → 0x834900 per `memset` komplett genullt. Ein
+  veralteter Eintrag aus einem früheren Bild ist damit nicht erreichbar.
+
+Nur theoretisch, kein Handlungsbedarf:
+
+- Der Boden-Shader deklariert `def c251`, braucht also 252 Konstanten; der Modell-Shader
+  `def c247` (248) bei Gate 247. Jede Karte mit Shader-Modell 2 oder 3 meldet 256.
+  Ausnahme: GeForce FX wird von der Exe auf 192 geklemmt, dort bleiben beide Höhlen aus
+  und die Shader zeigen das Original.
+- Unter OpenGL (`gxApi "opengl"`) nimmt das Spiel Text-Shader und begrenzt deren
+  Konstanten auf 223; die `.bls`-Shader gelten dort ohnehin nicht.
+- `popad` stellt EFLAGS nicht wieder her; ab 0x7D0298 liest nichts die Flags.
+- Der Upload beim Zeichnen schickt pro Bodenstück jetzt c0–c250 statt c0–c36 als einen
+  Block (bis zu 251 Register): nur Kosten, kein Fehler.
+
 ### Vorschlag vom 2026-10-11
 
 1. Nach der 3er-Schleife (z. B. Einsprung bei 0x7D0171, 6 Byte `mov esi,[ebp+8]` +
