@@ -2,7 +2,7 @@
 
 Deutsche Fassung: [README.de.md](README.de.md)
 
-Tool for WoW 3.3.5a (12340): builds vertex shaders from your own original shaders that
+Tool for WoW 3.3.5a (12340): builds, from your own original shaders, vertex shaders that
 render up to **8 point lights**. Counterpart to patch **No. 69 "More lights: 8 instead of
 4 point lights"** from St0ny's AIO WoW EXE Patcher (No. 66 until 2026-10-11). Without new
 shaders the exe does pass lights 5–8 to the graphics, but they never become visible.
@@ -25,7 +25,7 @@ If you do not want to build it yourself, take the finished zip from the
 Unpack the zip into the game's `Data` folder so that
 `Data\patch-5.MPQ\Shaders\Vertex\vs_3_0\Diffuse_T1.bls` exists. It contains only the
 newly built files (34 or 32 `.bls`), laid out like an MPQ, see "Folder instead of MPQ".
-Every release is built by a run on GitHub from the original shaders, which first checks
+Every release is built from the original shaders by a run on GitHub, which first checks
 that the result is bit-identical to the version confirmed in the game (section
 "Release run").
 
@@ -78,7 +78,7 @@ that the result is bit-identical to the version confirmed in the game (section
 
 ### Step 1: test build (magenta)
 
-Built with `--debug`, lights 5–8 do not glow in their own color but **magenta**.
+In a `--debug` build, lights 5–8 do not glow in their own color but **magenta**.
 Lights 1–4 look normal. That way you can see right away whether everything is working.
 
 ```
@@ -96,8 +96,8 @@ walk around slowly.
 | Everything looks as usual | Either there are no more than 4 lights nearby (try another place), or the folder is not loaded (then pack the folder into a real `patch-5.MPQ` with Ladik's MPQ Editor and try again) |
 | Models are missing, black, flickering, or the game crashes | Error in the shaders, please report with a screenshot |
 
-The terrain stays without magenta even in the test build: its extension to 8 lights
-(default since 2026-10-14) has no test color, it always computes with the real light
+The terrain shows no magenta even in the test build: its extension to 8 lights
+(default since 2026-10-14) has no test color; it always computes with the real light
 colors. Close to several fires the magenta on models oversaturates and swallows the
 orange; that is intended in the test build (full intensity 1.0 instead of the real
 light color).
@@ -128,9 +128,9 @@ Afterwards `/console fixedFunction 0` again and restart.
 python tools/build.py --ladetest Quelle "C:\WoW\Data"
 ```
 
-In it, **all** point lights 1–8 glow magenta, including the first four. As soon as at
-least 4 light sources are nearby (4 campfires), the character must be lit magenta, no
-matter what the exe does.
+In that build, **all** point lights 1–8 glow magenta, including the first four. As soon
+as at least 4 light sources are nearby (4 campfires), the character must be lit magenta,
+no matter what the exe does.
 
 | What you see | Meaning |
 |---|---|
@@ -156,7 +156,7 @@ take two screenshots at the same spot with the same camera: once with the folder
 without (e.g. rename the folder to `_patch-5.MPQ` and restart the game). With the
 folder, the character and buildings are lit by more light sources at the same time.
 When walking past a row of torches, the light on the character pops on and off less
-often, because only the 9th light gets dropped instead of already the 5th.
+often, because the first light to be dropped is now the 9th instead of the 5th.
 
 Result of the in-game test (2026-10-11, eight campfires in a circle, the Barrens): with
 the folder, the stones of the campfires are lit a little brighter and more evenly,
@@ -190,7 +190,7 @@ This can be checked under DXVK with `DXVK_SHADER_DUMP_PATH`: the new shaders rea
 - Only the variants with 4 lights (No. 9, 19, …, 89 of each file) of the model shaders
   (`Diffuse_*`, `CDiffuse_T1`) and building shaders (`MapObj*`), in `vs_2_0` and `vs_3_0`.
   The game uses these variants from 4 lights on.
-- Lights 1–4 stay unchanged instruction for instruction. After the last light addition,
+- Lights 1–4 stay unchanged instruction by instruction. After the last light addition,
   an extra block (32 instructions, plus 2 to save position and normal and one
   `def c247`) computes lights 5–8 with the same formula as the original:
 
@@ -204,8 +204,8 @@ This can be checked under DXVK with `DXVK_SHADER_DUMP_PATH`: the new shaders rea
   (`Lichtposition` = light position, `Farbe` = color, `Summe` = sum) with the registers
   that No. 69 fills: `c236–c239` color, `c240–c243` position, `c244–c246` attenuation.
   The saturation of the sum moves to the end of the extra block. Before the reciprocal,
-  the denominator of the attenuation is clamped with `max` to `c247.w` (= 1e-6, its own
-  `def`), so that registers that are never set do not cause a division by 0 (see
+  the denominator of the attenuation is clamped with `max` to at least `c247.w` (= 1e-6,
+  its own `def`), so that registers that are never set do not cause a division by 0 (see
   "Without the exe patch").
 - Not changed: terrain and water (own shaders, own data path), `vs_1_1` (too few
   constants), OpenGL (`arbvp1`).
@@ -218,10 +218,10 @@ This can be checked under DXVK with `DXVK_SHADER_DUMP_PATH`: the new shaders rea
 If the new shaders are present but the exe does not have patch No. 69, the exe never
 writes to `c236`–`c246`; they then hold 0 (certain under DXVK, since the constant buffer
 starts out at 0; under Windows D3D9 likewise according to the documentation). Color 0
-means: lights 5–8 contribute nothing, the shaders deliver the original with 4 lights
+means: lights 5–8 contribute nothing, so the shaders deliver the original with 4 lights
 bit-identically. Without the `max` clamp the attenuation would be 1/0; 0 · infinity is
-NaN under IEEE and 0 only under the D3D9 rule (DXVK reproduces the rule, other hardware
-not for certain). With the clamp, the case is clean regardless. Checked:
+NaN under IEEE and 0 only under the D3D9 rule (DXVK follows that rule; other hardware
+may not). With the clamp, the case is clean regardless. Checked:
 `test_lights8.py` test 3 and `d3d9_check.py` (each variant additionally with
 `c236`–`c250` = 0).
 
@@ -262,10 +262,10 @@ python3 tests/test_lights8.py <Quelle>
 python3 tests/test_lights8.py <Quelle>/patch.MPQ/Shaders/Vertex [...]
 ```
 
-With the `Quelle` (source folder) of `build.py`, the test checks exactly the effective
-files that the build uses too (older versions from `common-2` that are overridden by a
-patch MPQ are left out; they use instructions the emulator does not know). With
-individual `Vertex` folders, all files in them are checked.
+Given the same `Quelle` (source folder) as `build.py`, the test checks exactly the files
+that take effect, which are the ones the build is made from (older versions from
+`common-2` that a patch MPQ overrides are left out; they use instructions the emulator
+does not know). Given individual `Vertex` folders, it checks all files in them.
 
 Emulator test for each extended variant, with IEEE arithmetic and with the D3D9 rule
 `0 · x = 0` (DXVK `d3d9.floatEmulation`), plus test 3 with `c236`–`c246` = 0 (exe
@@ -306,7 +306,7 @@ chunk from its own constants (c28–c36), which the exe fills (VA `0x7D0050`). T
 part of the lights patch does not change that, which is why at first the terrain still
 got only 3 of the 8 lights, and at the edges of the terrain chunks you can see jumps
 (as in the original). `tools/terrain8.py` extends the terrain variants to 8 lights,
-which read lights 4–8 from c236–c250 (per light position, color, attenuation, as in
+which read lights 4–8 from c236–c250 (position, color and attenuation per light, as in
 c28–c36). These constants are delivered by the terrain part of No. 69 (in the patcher
 since 2026-10-12, now in the branch `st0ny-dev`); locations, format and the read-only
 check of the exe part are in [docs/BODEN.de.md](docs/BODEN.de.md) (German). In-game
@@ -346,11 +346,11 @@ from `SOURCE_DATE_EPOCH`, in the run the time of the commit).
 - Push to a branch: dry run, the package is attached to the run as the artifact
   `patch-5.MPQ`.
 - Push a tag `v*` (`git tag v1.0.0 && git push origin v1.0.0`): release with this tag.
-- On the Actions page "Release" → "Run workflow": with `version` (e.g. `v1.0.1`) a
-  release, empty a dry run; `entwurf` (draft) creates the release as a draft first. If
-  the version already exists, the run refreshes the release notes and assets (e.g. after
-  a change to the template) and removes packages it no longer builds; the tag stays
-  where it is.
+- On the Actions page "Release" → "Run workflow": with `version` (e.g. `v1.0.1`) the run
+  creates a release, without it a dry run; `entwurf` (draft) creates the release as a
+  draft first. If the version already exists, the run refreshes the release notes and
+  assets (e.g. after a change to the template) and removes packages it no longer builds;
+  the tag stays where it is.
 
 **Where the run gets the originals from.** Blizzard files do not go into the git
 history. That is why the original vertex shaders (`vs_2_0`, `vs_3_0` from `common-2`,
@@ -372,7 +372,7 @@ The zip has the layout `Shader-Quelle/<MPQ-Name>/Shaders/Vertex/vs_2_0|vs_3_0/*.
 it. As a fallback, the run takes the zip from the address in the repo secret
 `QUELLE_URL` if there is no draft.
 
-**If the source or the tool change deliberately** (so the checksums rightly no longer
+**If the source or the tool is changed deliberately** (so the checksums rightly no longer
 match): run `python3 tools/release.py QUELLE AUSGABE --summen-schreiben` (write
 checksums) locally, test the output in the game, then check in `tests/pruefsummen/`
 along with the change.
