@@ -290,7 +290,7 @@ when drawn, deliver the same color as the emulator.
 - `tools/sm3.py` – disassembler and token tool for D3D9 shaders (SM 2/3)
 - `tools/lights8.py` – extra block for lights 5–8 (models, buildings)
 - `tools/terrain8.py` – terrain (Terrain.bls) from 3 to 8 lights (see below)
-- `tools/build.py` – builds the folder `patch-5.MPQ` (`--debug`: lights 5–8 in magenta, `--ladetest`: all lights in magenta, `--ohne-boden`: leave out the terrain)
+- `tools/build.py` – builds the folder `patch-5.MPQ` (`--debug`: lights 5–8 in magenta, `--ladetest`: all lights in magenta, `--ohne-boden`: leave out the terrain, `--nur modelle|gebaeude|boden`: only one group (models, buildings, terrain) to narrow down a problem, see `docs/COA-VFOG.de.md`)
 - `tools/paket.py` – packs the built folder into a zip (same layout as the release zips)
 - `tools/release.py` – builds the three versions, runs the tests, compares checksums, packs (see "Release run")
 - `tools/emu.py`, `tests/` – emulator and tests (`test_lights8.py`, `test_terrain8.py`, `d3d9_check.py`)

@@ -16,6 +16,9 @@ Shader mit 4-Lichter-Varianten sowie Terrain.bls, Boden 3 -> 8 Lichter), und
 nur für vs_2_0 und vs_3_0. Der Boden setzt den Exe-Teil für den Boden voraus
 (Patch Nr. 69 ab 2026-10-12, siehe docs/BODEN.de.md); --ohne-boden lässt
 Terrain.bls weg, etwa für eine Exe mit einem älteren Stand des Patches.
+--nur modelle|gebaeude|boden (mehrfach erlaubt) baut nur diese Gruppe(n),
+zum Eingrenzen von Fehlern: modelle = Diffuse_*/CDiffuse_T1 (M2),
+gebaeude = MapObj* (WMO), boden = Terrain.bls.
 """
 
 import argparse
@@ -76,6 +79,19 @@ def effective_files(src):
     return eff
 
 
+GRUPPEN = ('modelle', 'gebaeude', 'boden')
+
+
+def gruppe(fname):
+    """Gruppe einer Shader-Datei: boden (Terrain.bls), gebaeude (MapObj*), sonst modelle."""
+    n = fname.lower()
+    if n == 'terrain.bls':
+        return 'boden'
+    if n.startswith('mapobj'):
+        return 'gebaeude'
+    return 'modelle'
+
+
 def collect_bls(paths):
     """Shader-Dateien für die Tests.
 
@@ -108,7 +124,13 @@ def main(argv=None):
                     help='den Boden-Shader (Terrain.bls) nicht erweitern, nur Modelle und Gebäude '
                          '(für eine Exe, deren Patch Nr. 69 den Boden-Teil noch nicht hat)')
     ap.add_argument('--boden', action='store_true', dest='boden', help=argparse.SUPPRESS)  # alter Schalter, heute Standard
+    ap.add_argument('--nur', action='append', choices=sorted(GRUPPEN), metavar='GRUPPE',
+                    help='nur diese Gruppe bauen (mehrfach erlaubt): modelle (Diffuse_*, CDiffuse_T1), '
+                         'gebaeude (MapObj*), boden (Terrain.bls); zum Eingrenzen von Fehlern')
     args = ap.parse_args(argv)
+    if args.nur and 'boden' in args.nur and not args.boden:
+        print('--nur boden und --ohne-boden schließen sich aus')
+        return 2
 
     eff = effective_files(args.quelle)
     if not eff:
@@ -130,6 +152,8 @@ def main(argv=None):
             continue
         changed = 0
         is_terrain = fname.lower() == 'terrain.bls'
+        if args.nur and gruppe(fname) not in args.nur:
+            continue
         try:
             for v in f.variants:
                 if is_terrain:
