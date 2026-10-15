@@ -7,8 +7,8 @@ Aufruf:
 QUELLE   Zip oder Ordner mit den Original-Shadern, je MPQ ein Unterordner wie
          bei build.py (QUELLE/patch.MPQ/Shaders/Vertex/vs_3_0/... usw.). Bei
          einem Zip darf darüber noch ein Ordner liegen, er wird gefunden.
-AUSGABE  Hier entstehen patch-5.MPQ.zip, patch-5.MPQ_ohne_Boden.zip,
-         patch-5.MPQ_Testfassung_Magenta.zip, SHA256SUMS.txt und
+AUSGABE  Hier entstehen patch-5.MPQ.zip, patch-5.MPQ_without_terrain.zip,
+         patch-5.MPQ_test_build_magenta.zip, SHA256SUMS.txt und
          RELEASE_NOTES.md (dazu die Arbeitsordner quelle/ und bau/).
 
 Schritte, jeweils mit Abbruch bei Fehlern:
@@ -48,8 +48,8 @@ ORDNER = 'patch-5.MPQ'
 FASSUNGEN = [
     # (Zip-Name ohne .zip, build.py-Schalter, Testaufruf-Schalter für test_lights8)
     ('patch-5.MPQ', [], None),
-    ('patch-5.MPQ_ohne_Boden', ['--ohne-boden'], None),
-    ('patch-5.MPQ_Testfassung_Magenta', ['--debug'], '--debug'),
+    ('patch-5.MPQ_without_terrain', ['--ohne-boden'], None),
+    ('patch-5.MPQ_test_build_magenta', ['--debug'], '--debug'),
 ]
 SUMMEN_DIR = os.path.join(REPO, 'tests', 'pruefsummen')
 VORLAGE = os.path.join(REPO, '.github', 'release-notes.md')
@@ -278,8 +278,8 @@ def main(argv=None):
         commit_kurz=commit[:7],
         repo=os.environ.get('GITHUB_REPOSITORY', 'Raz0r1337/WoW-lights-patch-shader'),
         n_standard=n['patch-5.MPQ'],
-        n_ohne_boden=n['patch-5.MPQ_ohne_Boden'],
-        n_testfassung=n['patch-5.MPQ_Testfassung_Magenta'],
+        n_without_terrain=n['patch-5.MPQ_without_terrain'],
+        n_test_build=n['patch-5.MPQ_test_build_magenta'],
     )
     with open(os.path.join(ausgabe, 'RELEASE_NOTES.md'), 'w', encoding='utf-8', newline='\n') as fh:
         fh.write(notizen)

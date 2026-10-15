@@ -18,8 +18,8 @@ Wer nicht selbst bauen will, nimmt das fertige Zip von der
 | Datei | Wofür |
 |---|---|
 | `patch-5.MPQ.zip` | **Normalfall**: Modelle, Gebäude und Boden mit 8 Lichtern |
-| `patch-5.MPQ_ohne_Boden.zip` | nur Modelle und Gebäude; für eine Exe, deren Nr. 69 den Boden-Teil noch nicht hat (Patcher vor 2026-10-12) |
-| `patch-5.MPQ_Testfassung_Magenta.zip` | Testfassung, Licht 5–8 leuchten magenta (siehe „Im Spiel testen“) |
+| `patch-5.MPQ_without_terrain.zip` | nur Modelle und Gebäude; für eine Exe, deren Nr. 69 den Boden-Teil noch nicht hat (Patcher vor 2026-10-12) |
+| `patch-5.MPQ_test_build_magenta.zip` | Testfassung, Licht 5–8 leuchten magenta (siehe „Im Spiel testen“) |
 | `SHA256SUMS.txt` | Prüfsummen der drei Zips |
 
 Das Zip in den `Data`-Ordner des Spiels entpacken, sodass es
