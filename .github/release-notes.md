@@ -14,7 +14,7 @@ buildings and terrain are lit by up to 8 lights instead of 4 (terrain: 3).
    terrain part). In `WTF\Config.wtf`: `SET gxApi "d3d9"`, and `fixedFunction` must not be `1`.
 
 Without No. 69 in the exe the shaders render bit-identically to the original with 4 lights.
-Details, in-game tests and troubleshooting: [README](https://github.com/{repo}/blob/{commit}/README.md) (German).
+Details, in-game tests and troubleshooting: [README](https://github.com/{repo}/blob/{commit}/README.md).
 
 ## Files
 

@@ -4,7 +4,7 @@
 # Datei Shader-Quelle.zip an einem NICHT veröffentlichten Release-Entwurf mit dem
 # Tag "quelle" in diesem Repo. Der Lauf lädt sie mit dem Token des Laufs; der
 # Entwurf bleibt unveröffentlicht. Ersatzweise nimmt der Lauf das Zip von der
-# Adresse im Secret QUELLE_URL (siehe README, Abschnitt "Release").
+# Adresse im Secret QUELLE_URL (siehe README.de.md, Abschnitt "Release-Lauf").
 #
 # Auslöser:
 #   - Push auf einen Zweig:   Probelauf, das Paket hängt nur als Artefakt am Lauf.
@@ -86,7 +86,7 @@ jobs:
             echo "Kein Release-Entwurf '$QUELLE_TAG' gefunden, lade aus dem Secret QUELLE_URL"
             curl --fail --silent --show-error --location "$QUELLE_URL" --output "quelle/$QUELLE_DATEI"
           else
-            echo "::error::Kein Release-Entwurf mit Tag '$QUELLE_TAG' und Datei '$QUELLE_DATEI' gefunden und kein Secret QUELLE_URL gesetzt (siehe README, Abschnitt Release)"
+            echo "::error::Kein Release-Entwurf mit Tag '$QUELLE_TAG' und Datei '$QUELLE_DATEI' gefunden und kein Secret QUELLE_URL gesetzt (siehe README.de.md, Abschnitt Release-Lauf)"
             exit 1
           fi
           ls -l quelle

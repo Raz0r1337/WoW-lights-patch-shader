@@ -1,5 +1,7 @@
 # WoW-lights-patch-shader
 
+English version: [README.md](README.md)
+
 Werkzeug für WoW 3.3.5a (12340): baut aus den eigenen Original-Shadern Vertex-Shader,
 die bis zu **8 Punktlichter** darstellen. Gegenstück zu Patch **Nr. 69 „Mehr Lichter:
 8 statt 4 Punktlichter“** aus St0nys AIO WoW EXE Patcher (bis 2026-10-11 Nr. 66). Ohne
