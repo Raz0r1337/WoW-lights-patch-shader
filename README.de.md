@@ -31,7 +31,8 @@ das Ergebnis bitgleich mit der im Spiel bestätigten Fassung ist (Abschnitt „R
 ## Voraussetzungen
 
 - `Wow.exe` 3.3.5a mit Nr. 69, zum Testen am besten auch Nr. 70 („Lichter bleiben an,
-  wenn ihre Quelle außerhalb des Bildes ist“).
+  wenn ihre Quelle außerhalb des Bildes ist“). Beide stehen seit 2026-10-15 im Zweig
+  `st0ny-dev` des Patchers (noch [BETA], nicht in `st0ny-main`).
 - Python 3 (nur Standardbibliothek). Für die Tests zusätzlich `numpy`.
 
 ## Benutzung
@@ -247,7 +248,7 @@ Modell, der Boden-Teil vor jedem Bodenstück):
 | neu, mit `--ohne-boden` | 8 Lichter | 3 Lichter (Original) |
 | neu (Standard) | 8 Lichter | 8 Lichter |
 
-So ist es im Patcher umgesetzt (Zweig `st0ny-dev-lights`, seit 2026-10-12): Der
+So ist es im Patcher umgesetzt (seit 2026-10-12, heute im Zweig `st0ny-dev`): Der
 Boden-Teil ist fester Bestandteil von Nr. 69, nicht einzeln wählbar. Gäbe es ihn ohne
 den Modell-Teil, läsen die neuen Modell-Shader in `c236`–`c246` die Bodenlichter in
 falschem Format. Seit dem Spieltest vom 2026-10-14 ist der Boden Standard beim Bauen.
@@ -304,8 +305,8 @@ Der Modell-Teil des Lichter-Patches ändert daran nichts, darum bekam der Boden 
 weiter nur 3 der 8 Lichter und an den Kanten der Bodenstücke sieht man Sprünge (so auch
 im Original). `tools/terrain8.py` erweitert die Boden-Varianten auf 8 Lichter, die
 Licht 4–8 aus c236–c250 lesen (je Licht Position, Farbe, Abschwächung wie c28–c36).
-Diese Konstanten liefert der Boden-Teil von Nr. 69 (Patcher-Zweig `st0ny-dev-lights`
-seit 2026-10-12); Stellen, Format und die lesende Prüfung des Exe-Teils stehen in
+Diese Konstanten liefert der Boden-Teil von Nr. 69 (im Patcher seit 2026-10-12, heute
+im Zweig `st0ny-dev`); Stellen, Format und die lesende Prüfung des Exe-Teils stehen in
 [docs/BODEN.de.md](docs/BODEN.de.md). Spieltest 2026-10-14 (Sascha, acht Lagerfeuer):
 keine Fehler, der Boden wird von allen Feuern beleuchtet. Seitdem baut das Werkzeug
 den Boden standardmäßig mit.
@@ -344,7 +345,7 @@ der Lauf ab), Zips packen, `SHA256SUMS.txt` und den Release-Text (englisch, Vorl
 - Auf der Actions-Seite „Release“ → „Run workflow“: mit `version` (z. B. `v1.0.1`) ein
   Release, leer ein Probelauf; `entwurf` legt das Release erst als Entwurf an. Gibt es die
   Version schon, erneuert der Lauf Text und Anhänge des Releases (etwa nach einer Änderung
-  an der Vorlage), der Tag bleibt.
+  an der Vorlage) und entfernt Pakete, die er nicht mehr baut; der Tag bleibt.
 
 **Woher der Lauf die Originale nimmt.** Blizzard-Dateien kommen nicht in den
 Git-Verlauf. Darum liegen die Original-Vertex-Shader (`vs_2_0`, `vs_3_0` aus

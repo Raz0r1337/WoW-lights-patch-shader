@@ -11,7 +11,8 @@ buildings and terrain are lit by up to 8 lights instead of 4 (terrain: 3).
    like an MPQ; with patch No. 21 ("Allow extended MPQ names") a name such as `patch-Z.mpq`
    works as well.
 2. Patch `Wow.exe` with No. 69 (patcher as of 2026-10-12 or later, which includes the
-   terrain part). In `WTF\Config.wtf`: `SET gxApi "d3d9"`, and `fixedFunction` must not be `1`.
+   terrain part; currently in the patcher's `st0ny-dev` branch, [BETA]).
+   In `WTF\Config.wtf`: `SET gxApi "d3d9"`, and `fixedFunction` must not be `1`.
 
 Without No. 69 in the exe the shaders render bit-identically to the original with 4 lights.
 Details, in-game tests and troubleshooting: [README](https://github.com/{repo}#readme).
