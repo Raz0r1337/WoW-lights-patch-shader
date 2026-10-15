@@ -8,6 +8,24 @@ neue Shader liefert die Exe Licht 5–8 zwar an die Grafik, sichtbar wird es abe
 Das Repo enthält **keine Blizzard-Dateien**. Die neuen Shader entstehen beim Spieler
 aus seinen eigenen Dateien.
 
+## Fertiges Paket herunterladen
+
+Wer nicht selbst bauen will, nimmt das fertige Zip von der
+[Releases-Seite](https://github.com/Raz0r1337/WoW-lights-patch-shader/releases):
+
+| Datei | Wofür |
+|---|---|
+| `patch-5.MPQ.zip` | **Normalfall**: Modelle, Gebäude und Boden mit 8 Lichtern |
+| `patch-5.MPQ_ohne_Boden.zip` | nur Modelle und Gebäude; für eine Exe, deren Nr. 69 den Boden-Teil noch nicht hat (Patcher vor 2026-10-12) |
+| `patch-5.MPQ_Testfassung_Magenta.zip` | Testfassung, Licht 5–8 leuchten magenta (siehe „Im Spiel testen“) |
+| `SHA256SUMS.txt` | Prüfsummen der drei Zips |
+
+Das Zip in den `Data`-Ordner des Spiels entpacken, sodass es
+`Data\patch-5.MPQ\Shaders\Vertex\vs_3_0\Diffuse_T1.bls` gibt. Es enthält nur die
+neu gebauten Dateien (34 bzw. 32 `.bls`), Aufbau wie ein MPQ, siehe „Ordner statt MPQ“.
+Jedes Release baut ein Lauf auf GitHub aus den Original-Shadern und prüft vorher, dass
+das Ergebnis bitgleich mit der im Spiel bestätigten Fassung ist (Abschnitt „Release-Lauf“).
+
 ## Voraussetzungen
 
 - `Wow.exe` 3.3.5a mit Nr. 69, zum Testen am besten auch Nr. 70 („Lichter bleiben an,
@@ -74,9 +92,10 @@ Figur und auf Gebäude in der Nähe richten und langsam herumlaufen.
 | Alles sieht aus wie immer | Entweder sind dort nicht mehr als 4 Lichter in der Nähe (anderen Ort probieren), oder der Ordner wird nicht geladen (dann den Ordner mit Ladik's MPQ Editor zu einem echten `patch-5.MPQ` packen und nochmal) |
 | Modelle fehlen, sind schwarz, flackern, oder das Spiel stürzt ab | Fehler in den Shadern, bitte mit Screenshot melden |
 
-Der Boden bleibt immer ohne Magenta, er hat eigene Shader und bekommt keine
-Zusatzlichter. Nahe an mehreren Feuern übersteuert das Magenta und schluckt das
-Orange, das ist in der Testfassung so gewollt (volle Stärke 1,0 statt der echten
+Der Boden bleibt auch in der Testfassung ohne Magenta: Seine Erweiterung auf 8 Lichter
+(seit 2026-10-14 Standard) hat keine Testfarbe, er rechnet immer mit den echten
+Lichtfarben. Nahe an mehreren Feuern übersteuert das Magenta auf Modellen und schluckt
+das Orange, das ist in der Testfassung so gewollt (volle Stärke 1,0 statt der echten
 Lichtfarbe).
 
 Stand 2026-10-11: Testfassung im Spiel bestätigt (Lagerfeuer im Brachland, ab dem
@@ -234,8 +253,14 @@ falschem Format. Seit dem Spieltest vom 2026-10-14 ist der Boden Standard beim B
 ## Tests
 
 ```
+python3 tests/test_lights8.py <Quelle>
 python3 tests/test_lights8.py <Quelle>/patch.MPQ/Shaders/Vertex [...]
 ```
+
+Mit der `Quelle` von `build.py` prüft der Test genau die wirksamen Dateien, aus denen
+auch gebaut wird (ältere, von einem Patch-MPQ überdeckte Fassungen aus `common-2`
+bleiben außen vor; sie benutzen Befehle, die der Emulator nicht kennt). Mit einzelnen
+`Vertex`-Ordnern werden alle Dateien darin geprüft.
 
 Emulator-Test für jede erweiterte Variante, mit IEEE-Rechnung und mit der D3D9-Regel
 `0 · x = 0` (DXVK `d3d9.floatEmulation`), dazu Test 3 mit `c236`–`c246` = 0 (Exe ohne
@@ -261,7 +286,11 @@ und gezeichnet dieselbe Farbe liefern wie der Emulator.
 - `tools/lights8.py` – Zusatzblock für Licht 5–8 (Modelle, Gebäude)
 - `tools/terrain8.py` – Boden (Terrain.bls) von 3 auf 8 Lichter (siehe unten)
 - `tools/build.py` – baut den Ordner `patch-5.MPQ` (`--debug`: Licht 5–8 in Magenta, `--ladetest`: alle Lichter in Magenta, `--ohne-boden`: Boden weglassen)
+- `tools/paket.py` – packt den gebauten Ordner in ein Zip (Aufbau wie die Release-Zips)
+- `tools/release.py` – baut die drei Fassungen, lässt die Tests laufen, vergleicht Prüfsummen, packt (siehe „Release-Lauf“)
 - `tools/emu.py`, `tests/` – Emulator und Tests (`test_lights8.py`, `test_terrain8.py`, `d3d9_check.py`)
+- `tests/pruefsummen/` – SHA-256 der im Spiel bestätigten Ausgabe und der Quelle
+- `.github/workflows/release.yml` – der Release-Lauf auf GitHub
 - `docs/PLAN.de.md` – ursprünglicher Plan mit Risiken
 - `docs/BODEN.de.md` – Boden: Analyse, Exe-Stellen, Exe-Teil des Patchers
 
@@ -287,7 +316,55 @@ falsch beleuchtet. Für so eine Exe den Boden weglassen:
 python3 tools/build.py QUELLE ZIEL --ohne-boden
 ```
 
-Test der Boden-Shader: `python3 tests/test_terrain8.py QUELLE/patch.MPQ/Shaders/Vertex`.
+Test der Boden-Shader: `python3 tests/test_terrain8.py QUELLE`.
+
+## Release-Lauf
+
+`.github/workflows/release.yml` baut auf GitHub aus den Original-Shadern das fertige
+Paket und hängt es an ein Release. Der Lauf ruft `tools/release.py` auf, das lokal
+dasselbe tut:
+
+```
+python3 tools/release.py QUELLE AUSGABE [--version v1.0.0]
+```
+
+Schritte: Quelle entpacken, die drei Fassungen bauen, Emulator-Tests (Modelle/Gebäude,
+Testfassung, Boden), Prüfsummen der gebauten Dateien gegen `tests/pruefsummen/`
+vergleichen (sie müssen bitgleich mit der im Spiel bestätigten Fassung sein, sonst bricht
+der Lauf ab), Zips packen, `SHA256SUMS.txt` und die Release-Notizen aus
+`.github/release-notizen.de.md` schreiben. Die Zips sind reproduzierbar (Zeitstempel aus
+`SOURCE_DATE_EPOCH`, im Lauf die Zeit des Commits).
+
+**Auslöser:**
+
+- Push auf einen Zweig: Probelauf, das Paket hängt als Artefakt `patch-5.MPQ` am Lauf.
+- Tag `v*` pushen (`git tag v1.0.0 && git push origin v1.0.0`): Release mit diesem Tag.
+- Auf der Actions-Seite „Release“ → „Run workflow“: mit `version` (z. B. `v1.0.1`) ein
+  Release, leer ein Probelauf; `entwurf` legt das Release erst als Entwurf an.
+
+**Woher der Lauf die Originale nimmt.** Blizzard-Dateien kommen nicht in den
+Git-Verlauf. Darum liegen die Original-Vertex-Shader (`vs_2_0`, `vs_3_0` aus
+`common-2`, `patch`, `patch-2`, `patch-3`, 126 Dateien) als `Shader-Quelle.zip` an einem
+**nicht veröffentlichten Release-Entwurf** mit dem Tag `quelle` in diesem Repo. Ein
+Entwurf ist nur für Leute mit Schreibzugriff sichtbar, und der Lauf lädt die Datei mit
+seinem eigenen Token. Einrichten oder erneuern (einmalig, von Hand):
+
+1. [Neues Release anlegen](https://github.com/Raz0r1337/WoW-lights-patch-shader/releases/new),
+   bei „Choose a tag“ `quelle` eintippen (ergibt „Create new tag: quelle on publish“;
+   der Tag entsteht erst beim Veröffentlichen, also nie).
+2. Titel z. B. „Quelle (Entwurf, nicht veröffentlichen)“, `Shader-Quelle.zip` in das
+   Feld für Anhänge ziehen.
+3. **„Save draft“** klicken, nicht „Publish release“.
+
+Das Zip hat den Aufbau `Shader-Quelle/<MPQ-Name>/Shaders/Vertex/vs_2_0|vs_3_0/*.bls`
+(ein Ordner darüber ist erlaubt, der Lauf sucht die Wurzel); seine Prüfsummen stehen in
+`tests/pruefsummen/quelle.sha256`, weicht die Quelle davon ab, meldet es der Lauf.
+Ersatzweise nimmt der Lauf das Zip von der Adresse im Repo-Secret `QUELLE_URL`, wenn es
+keinen Entwurf gibt.
+
+**Wenn sich Quelle oder Werkzeug bewusst ändern** (die Prüfsummen also zu Recht nicht
+mehr stimmen): lokal `python3 tools/release.py QUELLE AUSGABE --summen-schreiben`
+laufen lassen, die Ausgabe im Spiel testen, dann `tests/pruefsummen/` mit einchecken.
 
 ## Bekannt
 
