@@ -9,7 +9,8 @@
 # Auslöser:
 #   - Push auf einen Zweig:   Probelauf, das Paket hängt nur als Artefakt am Lauf.
 #   - Tag v*:                 Release mit diesem Tag.
-#   - Von Hand (Actions-Seite): mit "version" ein Release, ohne "version" ein Probelauf.
+#   - Von Hand (Actions-Seite): mit "version" ein Release (gibt es die Version schon,
+#                             werden Text und Anhänge erneuert), ohne "version" ein Probelauf.
 name: Release
 
 on:
@@ -109,7 +110,7 @@ jobs:
             ausgabe/RELEASE_NOTES.md
           if-no-files-found: error
 
-      - name: Release anlegen
+      - name: Release anlegen oder erneuern
         if: steps.version.outputs.version != ''
         env:
           GH_TOKEN: ${{ github.token }}
@@ -117,11 +118,17 @@ jobs:
           ENTWURF: ${{ inputs.entwurf }}
         run: |
           set -euo pipefail
-          args=(--title "Shader für 8 Lichter $VERSION" --notes-file ausgabe/RELEASE_NOTES.md --target "$GITHUB_SHA")
-          if [ "$ENTWURF" = "true" ]; then args+=(--draft); fi
-          gh release create "$VERSION" "${args[@]}" \
-            ausgabe/patch-5.MPQ.zip \
-            ausgabe/patch-5.MPQ_ohne_Boden.zip \
-            ausgabe/patch-5.MPQ_Testfassung_Magenta.zip \
-            ausgabe/SHA256SUMS.txt
+          args=(--title "Shaders for 8 lights $VERSION" --notes-file ausgabe/RELEASE_NOTES.md)
+          dateien=(ausgabe/patch-5.MPQ.zip ausgabe/patch-5.MPQ_ohne_Boden.zip
+                   ausgabe/patch-5.MPQ_Testfassung_Magenta.zip ausgabe/SHA256SUMS.txt)
+          if gh release view "$VERSION" --json tagName >/dev/null 2>&1; then
+            # Gibt es das Release schon (Lauf von Hand mit vorhandener Version): Text und
+            # Anhänge aus diesem Lauf erneuern; der Tag bleibt, wo er ist.
+            echo "Release $VERSION gibt es schon, Text und Anhänge werden erneuert"
+            gh release edit "$VERSION" "${args[@]}"
+            gh release upload "$VERSION" --clobber "${dateien[@]}"
+          else
+            if [ "$ENTWURF" = "true" ]; then args+=(--draft); fi
+            gh release create "$VERSION" "${args[@]}" --target "$GITHUB_SHA" "${dateien[@]}"
+          fi
           echo "Release $VERSION: https://github.com/$GITHUB_REPOSITORY/releases/tag/$VERSION"

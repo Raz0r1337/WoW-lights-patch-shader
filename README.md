@@ -331,8 +331,8 @@ python3 tools/release.py QUELLE AUSGABE [--version v1.0.0]
 Schritte: Quelle entpacken, die drei Fassungen bauen, Emulator-Tests (Modelle/Gebäude,
 Testfassung, Boden), Prüfsummen der gebauten Dateien gegen `tests/pruefsummen/`
 vergleichen (sie müssen bitgleich mit der im Spiel bestätigten Fassung sein, sonst bricht
-der Lauf ab), Zips packen, `SHA256SUMS.txt` und die Release-Notizen aus
-`.github/release-notizen.de.md` schreiben. Die Zips sind reproduzierbar (Zeitstempel aus
+der Lauf ab), Zips packen, `SHA256SUMS.txt` und den Release-Text (englisch, Vorlage
+`.github/release-notes.md`) schreiben. Die Zips sind reproduzierbar (Zeitstempel aus
 `SOURCE_DATE_EPOCH`, im Lauf die Zeit des Commits).
 
 **Auslöser:**
@@ -340,7 +340,9 @@ der Lauf ab), Zips packen, `SHA256SUMS.txt` und die Release-Notizen aus
 - Push auf einen Zweig: Probelauf, das Paket hängt als Artefakt `patch-5.MPQ` am Lauf.
 - Tag `v*` pushen (`git tag v1.0.0 && git push origin v1.0.0`): Release mit diesem Tag.
 - Auf der Actions-Seite „Release“ → „Run workflow“: mit `version` (z. B. `v1.0.1`) ein
-  Release, leer ein Probelauf; `entwurf` legt das Release erst als Entwurf an.
+  Release, leer ein Probelauf; `entwurf` legt das Release erst als Entwurf an. Gibt es die
+  Version schon, erneuert der Lauf Text und Anhänge des Releases (etwa nach einer Änderung
+  an der Vorlage), der Tag bleibt.
 
 **Woher der Lauf die Originale nimmt.** Blizzard-Dateien kommen nicht in den
 Git-Verlauf. Darum liegen die Original-Vertex-Shader (`vs_2_0`, `vs_3_0` aus

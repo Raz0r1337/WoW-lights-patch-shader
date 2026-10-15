@@ -22,8 +22,8 @@ Schritte, jeweils mit Abbruch bei Fehlern:
      sein. --summen-schreiben schreibt die Dateien stattdessen neu (nur nach
      einer bewussten Änderung an Quelle oder Werkzeug, danach neu im Spiel
      testen).
-  5. Zips packen (tools/paket.py), SHA256SUMS.txt und RELEASE_NOTES.md aus
-     .github/release-notizen.de.md schreiben.
+  5. Zips packen (tools/paket.py), SHA256SUMS.txt und RELEASE_NOTES.md (englisch,
+     aus .github/release-notes.md) schreiben.
 
 Dieselben Schritte laufen im GitHub-Lauf (.github/workflows/release.yml).
 """
@@ -52,7 +52,7 @@ FASSUNGEN = [
     ('patch-5.MPQ_Testfassung_Magenta', ['--debug'], '--debug'),
 ]
 SUMMEN_DIR = os.path.join(REPO, 'tests', 'pruefsummen')
-VORLAGE = os.path.join(REPO, '.github', 'release-notizen.de.md')
+VORLAGE = os.path.join(REPO, '.github', 'release-notes.md')
 
 
 def sha256(path):
