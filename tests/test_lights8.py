@@ -1,7 +1,9 @@
 """Prüft gepatchte 4-Lichter-Varianten im Emulator.
 
 Aufruf:  python3 tests/test_lights8.py [--debug | --ladetest] <Shader-Ordner> [...]
-(ein Ordner mit vs_2_0/ und vs_3_0/ darunter, z. B. <MPQ>/shaders/Vertex)
+(ein Ordner mit vs_2_0/ und vs_3_0/ darunter, z. B. <MPQ>/shaders/Vertex, oder
+die QUELLE von build.py; dann werden genau die wirksamen Dateien geprüft, aus
+denen auch gebaut wird)
 
 Test 1: Licht 5–8 leer (Farbe 0, Rest beliebig) -> alle Ausgaben bitgleich
         zum Original.
@@ -18,11 +20,10 @@ Beides einmal mit IEEE-Multiplikation und einmal mit der D3D9-Regel 0*x=0.
 
 import os
 import sys
-import glob
 import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'tools'))
-import bls, sm3, lights8, emu  # noqa: E402
+import bls, sm3, lights8, emu, build  # noqa: E402
 
 N = 512
 F = np.float32
@@ -175,22 +176,21 @@ def main(args):
     dirs = [a for a in args if not a.startswith('--')]
     rng = np.random.default_rng(1234)
     total = fails = 0
-    for d in dirs:
-        for path in sorted(glob.glob(os.path.join(d, 'vs_[23]_0', '*.bls'))):
-            try:
-                f = bls.load(path)
-            except ValueError:
+    for path in build.collect_bls(dirs):
+        try:
+            f = bls.load(path)
+        except ValueError:
+            continue
+        for i, v in enumerate(f.variants):
+            new = lights8.patch_variant_code(v.code, debug)
+            if new is None:
                 continue
-            for i, v in enumerate(f.variants):
-                new = lights8.patch_variant_code(v.code, debug)
-                if new is None:
-                    continue
-                for d3d9 in (False, True):
-                    total += 1
-                    err = check(path, v.code, new, rng, d3d9, debug)
-                    if err:
-                        fails += 1
-                        print(f'FEHLER {path} Variante {i} d3d9={d3d9}: {err}')
+            for d3d9 in (False, True):
+                total += 1
+                err = check(path, v.code, new, rng, d3d9, debug)
+                if err:
+                    fails += 1
+                    print(f'FEHLER {path} Variante {i} d3d9={d3d9}: {err}')
     print(f'{total} Prüfungen, {fails} Fehler')
     return 1 if fails or not total else 0
 

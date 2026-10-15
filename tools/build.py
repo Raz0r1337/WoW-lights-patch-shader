@@ -19,6 +19,7 @@ Terrain.bls weg, etwa für eine Exe mit einem älteren Stand des Patches.
 """
 
 import argparse
+import glob
 import os
 import re
 import sys
@@ -73,6 +74,24 @@ def effective_files(src):
                 if f.lower().endswith('.bls'):
                     eff[(prof, f.lower())] = (os.path.join(d, f), a)
     return eff
+
+
+def collect_bls(paths):
+    """Shader-Dateien für die Tests.
+
+    Jeder Pfad ist entweder ein Ordner mit vs_2_0/ und vs_3_0/ darunter (dann alle
+    .bls darin) oder ein QUELLE-Ordner wie beim Bauen (dann nur die wirksamen
+    Dateien, also genau die, aus denen build.py baut; überdeckte Fassungen aus
+    älteren MPQs bleiben außen vor).
+    """
+    out = []
+    for p in paths:
+        eff = effective_files(p) if os.path.isdir(p) else {}
+        if eff:
+            out.extend(path for _, (path, _) in sorted(eff.items()))
+        else:
+            out.extend(sorted(glob.glob(os.path.join(p, 'vs_[23]_0', '*.bls'))))
+    return out
 
 
 def main(argv=None):

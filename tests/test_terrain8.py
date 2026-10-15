@@ -1,7 +1,8 @@
 """Prüft die auf 8 Lichter erweiterten Boden-Shader (Terrain.bls) im Emulator.
 
 Aufruf:  python3 tests/test_terrain8.py <Shader-Ordner> [...]
-(ein Ordner mit vs_2_0/ und vs_3_0/ darunter, z. B. <MPQ>/shaders/Vertex)
+(ein Ordner mit vs_2_0/ und vs_3_0/ darunter, z. B. <MPQ>/shaders/Vertex, oder
+die QUELLE von build.py; dann zählt genau die wirksame Terrain.bls)
 
 Test 1: Licht 4–8 leer (wie von der Exe gesetzt: alles 0, Abschwächung x = 1)
         -> alle Ausgaben bitgleich zum Original.
@@ -15,11 +16,10 @@ Alles mit IEEE-Multiplikation und mit der D3D9-Regel 0*x=0.
 
 import os
 import sys
-import glob
 import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'tools'))
-import bls, sm3, terrain8, emu  # noqa: E402
+import bls, sm3, terrain8, emu, build  # noqa: E402
 
 N = 512
 F = np.float32
@@ -129,21 +129,20 @@ def check(code, new, rng, d3d9):
 def main(args):
     rng = np.random.default_rng(4321)
     total = fails = 0
-    for d in args:
-        for path in sorted(glob.glob(os.path.join(d, 'vs_[23]_0', '*.bls'))):
-            if os.path.basename(path).lower() != 'terrain.bls':
+    for path in build.collect_bls(args):
+        if os.path.basename(path).lower() != 'terrain.bls':
+            continue
+        f = bls.load(path)
+        for i, v in enumerate(f.variants):
+            new = terrain8.patch_variant_code(v.code)
+            if new is None:
                 continue
-            f = bls.load(path)
-            for i, v in enumerate(f.variants):
-                new = terrain8.patch_variant_code(v.code)
-                if new is None:
-                    continue
-                for d3d9 in (False, True):
-                    total += 1
-                    err = check(v.code, new, rng, d3d9)
-                    if err:
-                        fails += 1
-                        print(f'FEHLER {path} Variante {i} d3d9={d3d9}: {err}')
+            for d3d9 in (False, True):
+                total += 1
+                err = check(v.code, new, rng, d3d9)
+                if err:
+                    fails += 1
+                    print(f'FEHLER {path} Variante {i} d3d9={d3d9}: {err}')
     print(f'{total} Prüfungen, {fails} Fehler')
     return 1 if fails or not total else 0
 
