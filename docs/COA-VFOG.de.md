@@ -18,9 +18,10 @@ Was sich ohne den CoA-Client oder ohne coa-vfog nicht prüfen lässt, steht unte
 **Problem 1, Linien auf dem Wasser.** Die 34 Dateien des Ordners sind reine Vertex-Shader für
 Modelle (M2), Gebäude (WMO) und Boden. Keine davon wird für Flüssigkeiten benutzt; der Client hat
 dafür eigene Shader (`vsLiquidWater`, `vsLiquidWaterNoSpec`, `vsLiquidProcWater`, `vsLiquidMagma`,
-`WaterRipples`), die der Ordner nicht anfasst. Nach dem Liquid-Pass kommen Boden- und Gebäude-Shader
-nicht mehr vor, die Modell-Shader (`Diffuse_*`) aber schon: Die Pässe 1 und 2 der M2-Hauptszene
-(transparente Modelle, Partikel) werden nach dem Wasser gezeichnet (Abschnitt 1.2). In allen Varianten sind Eingabe- und
+`WaterRipples`), die der Ordner nicht anfasst. Nach den Flüssigkeiten kommen Boden- und Gebäude-Shader
+nicht mehr vor, die Modell-Shader (`Diffuse_*`) aber schon: Der Client zeichnet Flüssigkeiten in zwei
+Gruppen, und die M2-Hauptszene liegt mit allen Pässen hinter der ersten und mit dem letzten Pass hinter
+der zweiten Gruppe (Abschnitt 1.2). In allen Varianten sind Eingabe- und
 Ausgabedeklarationen, die Befehle für `oPos`, Nebel und Texturkoordinaten und alle `def` des
 Originals bytegleich; der Zusatzblock schreibt nur Temp-Register und ändert allein die
 Vertexfarbe (statisch über alle 416 geänderten Varianten der 34 Dateien geprüft und im Emulator in 2496 Läufen bitgleich für `oPos`, Nebel, Texturkoordinaten und Alpha, Abschnitt 1.3). Ein Muster, das fest im Bildschirmraster liegt (alle 4 Zeilen, über die
@@ -99,36 +100,52 @@ Original-Shaderordner enthalten eigene Vertex- und Pixel-Shader für Flüssigkei
 `vsLiquidWater`, `vsLiquidWaterNoSpec`, `vsLiquidProcWater%s` (das Suffix ist zur Laufzeit
 leer, `0x7997F0`), `vsLiquidMagma` und `WaterRipples`, dazu `psLiquid*`. Die Exe baut diese Namen bei
 0xA59534, 0xA59564, 0xA59504, 0xA59594 (Zeichenketten) und benutzt sie in der
-Flüssigkeits-Zeichenfunktion (Materialkonstruktoren ab `0x8A3DC0`; die Wasser-Zeichenfunktion `0x8A5590` setzt Vertex- und Pixel-Shader als Renderstate `0x4D`/`0x4E` aus eigenen Tabellen `[0xD44C10+idx·4]`/`[0xD44C0C]`). Keiner der 17 Namen des Ordners kommt dort vor.
+Flüssigkeits-Zeichenfunktion (Materialkonstruktoren `0x8A3E00`–`0x8A4255`; die Wasser-Zeichenfunktion `0x8A5590` setzt Vertex- und Pixel-Shader als Renderstate `0x4D`/`0x4E` aus eigenen Tabellen `[0xD44C10+idx·4]`/`[0xD44C0C]`, `0x8A585D`–`0x8A5881`). Keine der Welt-Shader-Tabellen kommt dort vor.
 
-Die 17 Namen des Ordners lädt die Exe nur an drei Stellen: `0x836500` (M2-Effekte aus `Model2.wfx`),
-`0x7AFE80` (WMO) und `0x79E7C0` (Boden, Tabelle `0xCE0008`); in den Flüssigkeitsfunktionen `0x8A48F0`,
-`0x8A5590`, `0x8A5900`, `0x8A6090` kommt keine dieser Tabellen vor. Ob Flüssigkeiten überhaupt mit Shader
-gezeichnet werden, entscheidet `0x8A2005` (Vertex-Shader-Stufe ≥ 1, Flag `[0xD43AF0]`, Pixel-Shader-Stufe ≥ 3);
-sonst nimmt der Client Fixed-Function-Materialien ohne Shader (`0x8A5C70`, `0x8A6350`, `0x8A5170`).
-`WaterRipples` ist ein eigenes Shader-Paar für Wellenringe und Kielwasser (`splash.blp`/`wake.blp`), geladen
-bei `0x79E23E`, gezeichnet in `0x79D5E0` nach der Welt, nicht Teil des Liquid-Passes; der Ordner ersetzt es
-nicht.
+Die Shader-Familien des Ordners lädt die Exe an drei Stellen: `0x836600`/`0x836C90` (M2-Effekte,
+Namen `Diffuse_T1`, `Diffuse_T2`, `Diffuse_Env`, `Diffuse_T1_T2`, `Diffuse_T1_Env`, `Diffuse_Env_T2`,
+`Diffuse_Env_Env`, Zeichenketten `0xA457A4` ff.), `0x7AFEE0` (WMO, Basisnamen `MapObjDiffuse`,
+`MapObjSpecular`, `MapObjOpaque`, `MapObjUDiffuse` usw., `0xA3FE2C` ff.; die vollständigen Dateinamen wie
+`MapObjDiffuse_T1` kommen als Zeichenkette in der Exe nicht vor, wie sie entstehen, habe ich nicht
+verfolgt) und `0x79E7C0` (Boden, `Terrain` und Varianten, Tabelle `0xCE0008`). Im Flüssigkeitscode
+(`0x8A1000`–`0x8A7000`) gibt es keinen Verweis auf diese Namen oder Tabellen. Ob Flüssigkeiten überhaupt mit
+Shader gezeichnet werden, entscheidet `0x8A2005` (Vertex-Shader-Stufe ≥ 1, Flag `[0xD43AF0]`,
+Pixel-Shader-Stufe ≥ 3); sonst nimmt der Client Fixed-Function-Materialien ohne Shader (`0x8A5C70`,
+`0x8A6350`, `0x8A5170`). `WaterRipples` ist ein eigenes Shader-Paar für Wellenringe und Kielwasser
+(`splash.blp`/`wake.blp`), geladen bei `0x79E23E`, gezeichnet in `0x79D5E0`; der Ordner ersetzt es nicht.
 
-**Zeichenreihenfolge** (für die Frage, was *nach* dem Liquid-Pass über dem Wasser liegt):
+**Zeichenreihenfolge** (für die Frage, was *nach* dem Liquid-Pass über dem Wasser liegt). Es gibt **zwei
+Flüssigkeitsgruppen**: `0x8A2240` wird einmal mit Parameter 0 aus der Weltfunktion und einmal mit
+Parameter 1 aus `0x790A80` aufgerufen (einzige Aufrufer `0x79ACF1` und `0x790AA2`); beide zeichnen mit
+derselben Wasser-Zeichenfunktion `0x8A5590`, Gruppe 0 nach Abstand aufsteigend sortiert, Gruppe 1
+absteigend (`0x8A1980`/`0x8A19E0`; welche Gewässer in welche Gruppe fallen, habe ich nicht verfolgt;
+absteigend = von hinten nach vorn spricht für die durchsichtigen Wasserflächen in Gruppe 1, das ist eine
+Vermutung).
 
 ```
 Welt 0x79A870:   Boden 0x798DA0 → Gebäude 0x7964A0 → 0x795F80 → 0x7968D0/0x796C10
-                 → M2-Nebenszene 0x7F09B0 → 0x793980 → Flüssigkeiten 0x8A2240 → Debug-Linien 0x7D5610
+                 → M2-Nebenszene 0x7F09B0 → 0x793980 → Flüssigkeiten Gruppe 0 (0x8A2240, Param 0)
+                 → Debug-Linien 0x7D5610
 Bild 0x4F8EA0:   Welt → 0x77F070 → M2-Hauptszene Pass 0 (0x823CB0)
-                 → je nach 0x780620:  Pass 2 → WaterRipples → 0x77F030 → 0x77F980
-                                oder: 0x77F980 → Pass 1 → 0x77F030 → WaterRipples → Pass 2
+                 → bei [0xCD8794] == 0:  Pass 2 → Flüssigkeiten Gruppe 1 + WaterRipples (0x77F020 → 0x790A80)
+                                         → 0x77F030 → 0x77F980 → Pass 1
+                   sonst:                0x77F980 → Pass 1 → 0x77F030 → Flüssigkeiten Gruppe 1 + WaterRipples
+                                         → Pass 2
 ```
 
-Das heißt: **Boden- und Gebäude-Shader werden nach dem Liquid-Pass nicht mehr benutzt.** Die
-**Modell-Shader** (`Diffuse_*`, `CDiffuse_T1`) dagegen schon: Die Pässe 1 und 2 der M2-Hauptszene
-(transparente Modelle, Partikel; welcher Pass was enthält, ist nicht einzeln belegt) werden **nach** dem
-Wasser gezeichnet, dazu Detail-Doodads mit eigenem Shader `DetailDoodad` und die `WaterRipples`. Wenn
-coa-vfog nach dem Liquid-Pass oder am Ende der Welt ansetzt und dabei die gebundenen Vertex-Shader
-auswertet, sieht es dort die geänderten Modell-Shader (längerer Bytecode, `def c247`, Lesezugriffe auf
-`c236`–`c247`); das ist der konkreteste Berührungspunkt zwischen dem Ordner und einem Nachbearbeitungsschritt
-auf dem Wasser (Rückfrage 1 in Abschnitt 3). Die Test-Builds `models_only` und `buildings_only` trennen genau
-diesen Fall.
+Der Weg von `0x823CB0` zu den Modell-Shadern ist geschlossen nachgewiesen: `0x823CB0` → `0x823130` →
+`0x8203B0` → `0x873060` setzt Vertex-Shader (`push 0x4d`, `0x873088`) und Pixel-Shader aus den Handles,
+die `0x836600`/`0x872D30` aus den `Diffuse_*`-Namen geladen haben.
+
+Das heißt: **Boden- und Gebäude-Shader werden nach den Flüssigkeiten nicht mehr benutzt.** Die
+**Modell-Shader** (`Diffuse_*`, `CDiffuse_T1`) dagegen schon, und zwar mit allen Pässen der
+M2-Hauptszene: Pass 0 (die normalen Modelle) liegt nach Flüssigkeitsgruppe 0, der jeweils letzte Pass
+nach Gruppe 1, ein mittlerer Pass zwischen beiden Gruppen; dazu kommen Detail-Doodads mit eigenem Shader
+`DetailDoodad` und die `WaterRipples`. Wenn coa-vfog nach „dem“ Liquid-Pass oder am Ende der Welt ansetzt
+und dabei die gebundenen Vertex-Shader auswertet, sieht es dort die geänderten Modell-Shader (längerer
+Bytecode, `def c247`, Lesezugriffe auf `c236`–`c247`); das ist der konkreteste Berührungspunkt zwischen
+dem Ordner und einem Nachbearbeitungsschritt auf dem Wasser (Rückfrage 1 in Abschnitt 3). Die Test-Builds
+`models_only` und `buildings_only` trennen genau diesen Fall.
 
 ### 1.3 Sind Ausgaberegister, Semantiken und Nebelausgabe bitgleich zum Original?
 
@@ -194,8 +211,8 @@ Zeilen liegen und über die ganze Breite gleich sind. Das Muster passt zu einem 
 **Tiefentest.** Nein, der Client zeichnet weder Boden noch Gebäude in mehreren Pässen mit Tiefentest EQUAL. Der
 Tiefenvergleich ist Renderstate `0xE` mit den Werten 0 = LessEqual, 1 = Equal, 2 = GreaterEqual, 3 = Less
 (D3D-Tabelle `0xA2FA14` = {4, 3, 7, 2}, GL-Tabelle `0xAD8E80`). Die einzigen Schreiber dieses States sind die
-Standardwerte `0x6865B0` (`0x68680A`) und die M2-Szene `0x823827`, beide setzen 0 (LessEqual); EQUAL wird
-nirgends gesetzt. Ein Boden-Chunk mit bis zu 4 Texturlagen wird im Shader-Pfad `0x7D2D70` in **einem**
+Standardwerte `0x6865B0` (`0x68680A`) und `0x686237` (Tabelleninitialisierung) sowie die M2-Szene
+`0x823827`, alle setzen 0 (LessEqual); EQUAL wird nirgends gesetzt (zweifach gelesen). Ein Boden-Chunk mit bis zu 4 Texturlagen wird im Shader-Pfad `0x7D2D70` in **einem**
 Drawcall gezeichnet (Lagen in Texturstufen 0–3, Alphakarte dahinter, Vertex-Shader-Variante aus `0xCE0008`
 über `0x79E470`, Pixel-Shader `Terrain0`–`3` nach Lagenzahl aus `0xD1D080`); nur der Fixed-Function-Pfad
 `0x7D0760` (ohne Shader) zeichnet je Lage einen Drawcall, mit Blending statt EQUAL. Gebäude-Gruppen zeichnet
@@ -260,7 +277,7 @@ keiner dieser Stufen etwas; sie bekommen die Lichter fertig ausgewählt in `c17`
 
 | Stufe | Wo | Wirkung |
 |---|---|---|
-| 1 Modell wird in diesem Bild animiert? | `0x828A00`, Animate-Liste der Szene | nein → Licht wird beim nächsten `QueryLights` abgeschaltet („Lichter bleiben an“ hebt das auf) |
+| 1 Modell wird in diesem Bild animiert? | `0x828A00`, Animate-Liste der Szene (gezeichnet, oder < 10 Yards zur Kamera) | nein → Licht wird beim nächsten `QueryLights` abgeschaltet („Lichter bleiben an“ hebt das auf) |
 | 2 Gitterfenster um das beleuchtete Objekt | `QueryLights 0x81E400`, 64×64 Zellen à 20 Yards | Modelle: 2×2 Zellen = 40×40 Yards; Boden: Zellen um r ≈ 23,6 Yards; Gebäude: Zellen um die WMO-Kugel |
 | 3 die 4 nächsten Lichter | `AddLight 0x834F60` | nur 3D-Abstand zum Objekt, keine Reichweite („Mehr Lichter“: 8) |
 | 4 Abschwächung im Shader | `c25`–`c27`, fest 0 / 0,7 / 0,03 | 1/(0,7·d + 0,03·d²): 10 Yards → 10 %, 20 → 3,8 %, 30 → 2,1 % |
@@ -367,10 +384,14 @@ Wann ein **Kartendoodad** (Lagerfeuer, Laterne usw.) in die Animate-Liste kommt
 (`0x823F10(1)`), entscheidet je Chunk `0x7987A0` (gleich in `0x799A4A` ff. und `0x799BDA` ff.):
 
 - es wird gezeichnet: Sichtkegel `0x983D20`, Verdeckungs-/Horizonttest `0x7CCE00`/`0x78FC40`,
-  dann `0x791CB0` mit Zeichendistanz nach Größenklasse (`Doodad+0x24`): Basis 30 / 100 / 200 /
-  750 / 1250 Yards (Tabelle `0xADF364`), mit CVar `environmentDetail` (0,5..1,5) multipliziert
-  und quadriert nach `0xADF3B4`; jenseits davon kein Einhängen (`0x791E8B`); ohne Kartenflag
-  `[0xCD774C] & 0x4000` oder mit Doodad-Flag 0x800 ohne Distanzprüfung;
+  dann `0x791CB0` mit Zeichendistanz nach Größenklasse (`Doodad+0x24`, Klassengrenzen
+  `0xADF350` = 1 / 4 / 15 / 100 Yards Modellgröße): 30 / 100 / 200 / 750 / 1250 Yards
+  (Tabelle `0xADF364`, quadriert nach `0xADF3B4`); die CVar `environmentDetail` (0,5..1,5,
+  Klemmung in `0x78DC60`) skaliert in `0x78F570` nur die Klassen 1–3 (100/200/750), Klasse 0
+  (30 Yards) und Klasse 4 (1250) sind fest. Jenseits der Distanz kehrt `0x791CB0` ohne
+  Einhängen zurück (`0x791E8B`); das Doodad bleibt dann in seinem vorigen Zustand, wird also
+  weder ein- noch ausgehängt. Ohne Kartenflag `[0xCD774C] & 0x4000` oder mit Doodad-Flag 0x800
+  entfällt die Distanzprüfung;
 - oder es hat Doodad-Flag 0x400 (`0x7988CB`);
 - oder es ist näher als **10 Yards** an der Kamera: `d² < [0x9E8CC8]` = 100
   (`0x7988FC`, `0x799A79`, `0x799C18`, Kameraposition `[0xCD8F5C..0x64]`);
@@ -378,12 +399,13 @@ Wann ein **Kartendoodad** (Lagerfeuer, Laterne usw.) in die Animate-Liste kommt
 
 Das ist die eigentliche Antwort auf „Radius um die Kamera“: Es gibt ihn nur für
 **nicht gezeichnete** Doodads (10 Yards), für gezeichnete gilt die Zeichendistanz ihrer
-Größenklasse. Ein kleines Lagerfeuer (Klasse 0, 30 Yards × `environmentDetail`) hinter der
-Kamera oder außerhalb des Sichtkegels verliert sein Licht, sobald es mehr als 10 Yards weg ist,
-auch wenn es die Figur vor der Kamera noch beleuchten müsste. Ein Lagerfeuer im Bild verliert
-sein Licht, wenn es jenseits seiner Zeichendistanz liegt, bei `environmentDetail 1.0` also ab
-30 Yards bei Klasse 0 (die Klasse hängt von der Modellgröße ab, Grenzen `0xADF350`: 1 / 4 /
-15 / 100 Yards).
+Größenklasse. Ein Lagerfeuer hinter der Kamera oder außerhalb des Sichtkegels verliert sein
+Licht, sobald es mehr als 10 Yards weg ist, auch wenn es die Figur vor der Kamera noch
+beleuchten müsste. Ein Lagerfeuer im Bild verliert sein Licht, wenn es jenseits der
+Zeichendistanz seiner Größenklasse liegt: unter 1 Yard Modellgröße 30 Yards (fest), 1–4 Yards
+100 Yards × `environmentDetail`, 4–15 Yards 200 × `environmentDetail`. Welche Klasse ein
+bestimmtes Feuer-Modell hat, hängt von seiner Begrenzungskugel ab und wurde nicht
+nachgeschlagen.
 
 Patch **„Lichter bleiben an“** (Datei `0x41D948` = VA `0x81E548`, `je` → `jmp`) macht
 `QueryLights` zeitstempelblind: Lichter nicht animierter Modelle bleiben mit der letzten
@@ -400,8 +422,11 @@ gelten, ist nicht geprüft.
 ### 2.4 Abschwächung: fest in der Exe, nicht aus der M2-Datei
 
 Der Lichtkonstruktor `0x834A40` setzt a0 = 0 (`fldz`, `0x834A7C`), a1 = `[0x9E2EC0]` = 0,7
-(`0x834A81`), a2 = `[0x9F23C8]` = 0,03 (`0x834A94`); das sind die einzigen Schreiber von
-`CLight+0x54/+0x58/+0x5C` im ganzen `.text`. Die M2-Spuren `attenuation_start` (Def `+0x60`)
+(`0x834A81`), a2 = `[0x9F23C8]` = 0,03 (`0x834A94`). Für Punktlichter (Typ 1) gibt es keinen
+anderen Schreiber dieser Felder; der einzige weitere Schreiber im `.text` (`0x7D505F–0x7D5076`,
+setzt 1/0/0) gehört zu einem globalen Richtungslicht vom Typ 0 (`0xD31990`, Sonne), das `0x872900`
+nicht als Punktlicht kopiert. Die M2-Lichtanimation (`0x828A00` ff.) und die Setter (`0x8356xx`)
+schreiben nie auf `+0x54..+0x5C`. Die M2-Spuren `attenuation_start` (Def `+0x60`)
 und `attenuation_end` (Def `+0x74`) werden nirgends ausgewertet (Lichtschleife
 `0x830401–0x830624` liest nur Typ, Knochen, Farben, Intensitäten und Sichtbarkeit). Die
 Lichtfarbe `+0x3C` = Diffusfarbe × Diffusintensität × Modellalpha (`0x8305B9–0x8305FE`).
@@ -465,8 +490,9 @@ Suchzelle nicht zusammen; nur als Dateipatch, nicht zur Laufzeit umschalten.
 
 **C. Animationsradius für nicht gezeichnete Kartendoodads (10 Yards) erhöhen.** Die drei
 `fcomp`-Operanden auf `[0x9E8CC8]` (100,0 = 10²; 43 Nutzer, nicht direkt patchbar) auf eine
-größere vorhandene Konstante umlenken, z. B. `[0xADF3B4]` (= (30 Yards × `environmentDetail`)²,
-Zeichendistanz der Größenklasse 0): VA `0x7988FE` / `0x799A7B` / `0x799C1A` (Datei
+größere vorhandene Konstante umlenken, z. B. `[0xADF3B4]` (= 900 = 30 Yards², Zeichendistanz der
+Größenklasse 0, fest, nicht von `environmentDetail` abhängig) oder `[0xADF3B8]` (= (100 Yards ×
+`environmentDetail`)², Klasse 1, Operand `B8 F3 AD 00`): VA `0x7988FE` / `0x799A7B` / `0x799C1A` (Datei
 `0x397CFE` / `0x398E7B` / `0x39901A`), je 4 Byte `C8 8C 9E 00` → `B4 F3 AD 00` (Befehl bleibt
 `D8 1D imm32`). Nebenwirkung: mehr Modelle werden je Bild animiert (CPU). Radikaler: alle
 nicht sichtbaren Doodads animieren: `0x798907` (`0x397D07`) `7B 14` → `EB 14`, `0x799A84`
@@ -474,8 +500,9 @@ nicht sichtbaren Doodads animieren: `0x798907` (`0x397D07`) `7B 14` → `EB 14`,
 Einhängeseite); Doodads jenseits der Zeichendistanz bleiben auch dann unberührt.
 
 **D. Ohne Exe-Patch.** `/console environmentDetail 1.5` hebt die Zeichen- und damit
-Animationsdistanz aller Größenklassen um 50 % (Klemmung 0,5..1,5 in `0x78DC60`); „Lichter
-bleiben an“ verhindert das Abschalten, löst aber das Einfrieren der Spuren nicht.
+Animationsdistanz der Größenklassen 1–3 (Modelle von 1 bis 100 Yards Größe) um 50 % (Klemmung
+0,5..1,5 in `0x78DC60`; Klassen 0 und 4 sind fest); „Lichter bleiben an“ verhindert das
+Abschalten, löst aber das Einfrieren der Spuren nicht.
 
 **E. Abschwächung flacher machen (betrifft alle M2-Punktlichter, auch Zauber).** Operanden im
 Konstruktor: `0x834A83` (Datei `0x433E83`, zeigt auf 0,7 bei `0x9E2EC0`, 17 Nutzer) und
@@ -501,14 +528,18 @@ Nicht von hier prüfbar oder nicht gelesen:
 - Die Aufrufer von `0x823F10` außerhalb der Kartendoodads (2.3).
 - Die DXVK-Angaben in 1.4 stammen aus der Erinnerung an den Quelltext, nicht aus einer neuen
   Lesung.
+- Welche Gewässer in Flüssigkeitsgruppe 0 bzw. 1 landen und was `[0xCD8794]` (Reihenfolge der
+  M2-Pässe) schaltet (1.2).
+- Wie die vollständigen WMO-Shader-Dateinamen (`MapObjDiffuse_T1` usw.) aus den Basisnamen in
+  `0x7AFEE0` entstehen (1.2).
 
 Rückfragen, deren Antwort die Analyse weiterbringt:
 
 1. **Woran erkennt coa-vfog den Flüssigkeitsdurchgang und das Ende der Welt?** Am gebundenen
    Vertex-/Pixel-Shader (Handle aus `CreateVertexShader`, Hash oder Länge des Bytecodes,
-   gelesene Konstanten), an Texturen, an Render-States oder an Draw-Call-Zählern? Nach dem
-   Liquid-Pass bindet der Client die Modell-Shader (`Diffuse_*`) für die M2-Pässe 1 und 2
-   (Abschnitt 1.2). Die 34 neuen Fassungen unterscheiden sich vom Original durch längeren Bytecode,
+   gelesene Konstanten), an Texturen, an Render-States oder an Draw-Call-Zählern? Und welche der
+   zwei Flüssigkeitsgruppen (Abschnitt 1.2) meint coa-vfog mit „dem“ Liquid-Pass? Nach beiden
+   bindet der Client die Modell-Shader (`Diffuse_*`) für die M2-Hauptszene. Die 34 neuen Fassungen unterscheiden sich vom Original durch längeren Bytecode,
    `def c247`/`def c251`, Lesezugriffe auf `c236`–`c251` und das verschobene `_sat`. Ein
    Fingerabdruck, der auf Länge oder Hash geht, erkennt sie nicht mehr; ein Hook, der „Ende des
    Liquid-Passes“ am Wechsel zu einem bekannten Shader erkennt, würde dann anders feuern.
@@ -542,6 +573,9 @@ Rückfragen, deren Antwort die Analyse weiterbringt:
 | Kartendoodads je Chunk | `0x7987A0` (`0x7988CB` Flag 0x400, `0x7988FC` 10-Yard-Test), `0x799A4A` ff., `0x799BDA` ff.; Zeichendistanz `0x791CB0`, Tabellen `0xADF364`/`0xADF3B4`/`0xADF350`; CVar `environmentDetail` `0x78DC60` |
 | Sichtkegel / Horizont | `0x983D20` / `0x7CCE00`, `0x78FC40` |
 | Shader-Konstanten | `0x872900` (c17–c27; Aufrufer `0x873E85` M2, `0x7A91A9` WMO); Boden `0x7D0050`/`0x7D00E0` (c28–c36) |
+| Shader-Lader | M2 `0x836600`/`0x836C90` (Handles setzt `0x873060`), WMO `0x7AFEE0`, Boden `0x79E7C0`; Wasser `0x8A3E00`–`0x8A4255`, Zeichnen `0x8A5590` |
+| Zeichenreihenfolge | Welt `0x79A870` (Flüssigkeiten Gruppe 0 bei `0x79ACF1`), Bild `0x4F8EA0` (M2-Pässe `0x823CB0`, Gruppe 1 über `0x77F020` → `0x790A80` → `0x790AA2`) |
+| Tiefentest | Renderstate `0xE`, Schreiber `0x68680A`, `0x686237`, `0x823827` (alle 0 = LessEqual); D3D-Tabelle `0xA2FA14` |
 | Boden-Chunk-Kugel | `0x7B7AF0` (`chunk+0x24` Mitte, `+0x30` Radius); Lighting `0x7D0072–0x7D00A2` |
 | WMO-Instanz | `0x7964A0`: Lighting `0x79670B–0x796727`, Innenlichter `0x7B3F30`/`0x7C3DB0` (Tiefe `+0x4C` < `[0xCD7668]`), Gruppen `0x7ABF50` |
 | Flüssigkeits-Shader-Namen | `0xA59534` vsLiquidWater, `0xA59564` NoSpec, `0xA59504` ProcWater, `0xA59594` Magma |
