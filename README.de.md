@@ -3,9 +3,15 @@
 English version: [README.md](README.md)
 
 Werkzeug für WoW 3.3.5a (12340): baut aus den eigenen Original-Shadern Vertex-Shader,
-die bis zu **8 Punktlichter** darstellen. Gegenstück zu Patch **Nr. 69 „Mehr Lichter:
-8 statt 4 Punktlichter“** aus St0nys AIO WoW EXE Patcher (bis 2026-10-11 Nr. 66). Ohne
-neue Shader liefert die Exe Licht 5–8 zwar an die Grafik, sichtbar wird es aber nicht.
+die bis zu **8 Punktlichter** darstellen. Gegenstück zum Patch **„Mehr Lichter: 8 statt
+4 Punktlichter (Grundlage für neue Shader)“** aus
+[St0nys AIO WoW EXE Patcher](https://github.com/Raz0r1337/St0nys-AIO-WoW-EXE-Patcher)
+([Patch-Beschreibung](https://github.com/Raz0r1337/St0nys-AIO-WoW-EXE-Patcher/blob/HEAD/docs/PATCHES.de.md#patch-lights)).
+Ohne neue Shader liefert die Exe Licht 5–8 zwar an die Grafik, sichtbar wird es aber
+nicht. Der Patcher nummeriert seine Patches, und die Nummern verschieben sich zwischen
+seinen Zweigen (Stand 2026-10-17: Nr. 67 im veröffentlichten Patcher, `st0ny-main`;
+Nr. 69 in `st0ny-dev`), darum nennt diese README die Patches bei ihren Kurznamen
+„Mehr Lichter“ und „Lichter bleiben an“.
 
 Das Repo enthält **keine Blizzard-Dateien**. Die neuen Shader entstehen beim Spieler
 aus seinen eigenen Dateien.
@@ -18,7 +24,7 @@ Wer nicht selbst bauen will, nimmt das fertige Zip von der
 | Datei | Wofür |
 |---|---|
 | `patch-5.MPQ.zip` | **Normalfall**: Modelle, Gebäude und Boden mit 8 Lichtern |
-| `patch-5.MPQ_without_terrain.zip` | nur Modelle und Gebäude; für eine Exe, deren Nr. 69 den Boden-Teil noch nicht hat (Patcher vor 2026-10-12) |
+| `patch-5.MPQ_without_terrain.zip` | nur Modelle und Gebäude; für eine Exe, deren „Mehr Lichter“ den Boden-Teil noch nicht hat (Patcher vor 2026-10-12) |
 | `patch-5.MPQ_test_build_magenta.zip` | Testfassung, Licht 5–8 leuchten magenta (siehe „Im Spiel testen“) |
 | `SHA256SUMS.txt` | Prüfsummen der drei Zips |
 
@@ -30,9 +36,11 @@ das Ergebnis bitgleich mit der im Spiel bestätigten Fassung ist (Abschnitt „R
 
 ## Voraussetzungen
 
-- `Wow.exe` 3.3.5a mit Nr. 69, zum Testen am besten auch Nr. 70 („Lichter bleiben an,
-  wenn ihre Quelle außerhalb des Bildes ist“). Beide stehen seit 2026-10-15 im Zweig
-  `st0ny-dev` des Patchers (noch [BETA], nicht in `st0ny-main`).
+- `Wow.exe` 3.3.5a mit „Mehr Lichter“, zum Testen am besten auch
+  [„Lichter bleiben an, wenn ihre Quelle außerhalb des Bildes ist“](https://github.com/Raz0r1337/St0nys-AIO-WoW-EXE-Patcher/blob/HEAD/docs/PATCHES.de.md#patch-lightstay).
+  Beide stehen seit 2026-10-17 im
+  [veröffentlichten Patcher](https://github.com/Raz0r1337/St0nys-AIO-WoW-EXE-Patcher/releases)
+  (v2026.10.17.2, Zweig `st0ny-main`); davor nur in `st0ny-dev`.
 - Python 3 (nur Standardbibliothek). Für die Tests zusätzlich `numpy`.
 
 ## Benutzung
@@ -67,7 +75,7 @@ das Ergebnis bitgleich mit der im Spiel bestätigten Fassung ist (Abschnitt „R
 
 ### Vorbereitung
 
-- `Wow.exe` mit Nr. 69 und Nr. 70 patchen.
+- `Wow.exe` mit „Mehr Lichter“ und „Lichter bleiben an“ patchen.
 - In `WTF\Config.wtf` muss `SET gxApi "d3d9"` stehen (mit DXVK ohnehin) und
   `fixedFunction` darf nicht `1` sein (`/console fixedFunction 0`, danach Neustart).
   Unter OpenGL (`gxApi "opengl"`) nimmt das Spiel andere Shader, dann wirkt nichts.
@@ -110,14 +118,14 @@ Dann ist entweder die Exe-Seite nicht aktiv oder die neuen Shader werden nicht
 geladen. Zwei Tests trennen das:
 
 **Exe-Seite ohne Shader prüfen.** Im Spiel `/console fixedFunction 1` eingeben und
-das Spiel neu starten. In diesem Modus arbeitet das Spiel ohne Shader, und Nr. 69 gibt
-dem Grafikgerät 8 Lichtplätze statt 4. Dann an einem dunklen Ort nacheinander
-Lagerfeuer um die Figur stellen (Kochkunst, „Einfaches Lagerfeuer“):
+das Spiel neu starten. In diesem Modus arbeitet das Spiel ohne Shader, und
+„Mehr Lichter“ gibt dem Grafikgerät 8 Lichtplätze statt 4. Dann an einem dunklen Ort
+nacheinander Lagerfeuer um die Figur stellen (Kochkunst, „Einfaches Lagerfeuer“):
 
 | Was man sieht | Bedeutung |
 |---|---|
-| Ab dem 4. Feuer geht eins wieder aus (höchstens 3 Feuer leuchten gleichzeitig) | Nr. 69 ist nicht aktiv (Original: 4 Plätze, einer davon für die Sonne) |
-| Bis zu 7 Feuer leuchten gleichzeitig auf die Figur | Nr. 69 arbeitet, die Exe liefert die Lichter |
+| Ab dem 4. Feuer geht eins wieder aus (höchstens 3 Feuer leuchten gleichzeitig) | „Mehr Lichter“ ist nicht aktiv (Original: 4 Plätze, einer davon für die Sonne) |
+| Bis zu 7 Feuer leuchten gleichzeitig auf die Figur | „Mehr Lichter“ arbeitet, die Exe liefert die Lichter |
 
 Danach wieder `/console fixedFunction 0` und neu starten.
 
@@ -164,16 +172,17 @@ klein, da ein Lagerfeuer nur wenige Meter weit leuchtet. Nichts fehlt, nichts is
 schwarz. Deutlicher wird der Unterschied bei einer Figur, die zwischen mehr als vier
 nahen Lichtquellen steht, oder bei Fackelreihen in Städten.
 
-Mit dem Boden (seit 2026-10-14 Standard, Exe mit Nr. 69 ab 2026-10-12): Spieltest
-ohne Fehler, der Boden wird von allen acht Feuern beleuchtet statt von dreien je
-Bodenstück.
+Mit dem Boden (seit 2026-10-14 Standard, Exe mit „Mehr Lichter“ ab 2026-10-12):
+Spieltest ohne Fehler, der Boden wird von allen acht Feuern beleuchtet statt von dreien
+je Bodenstück.
 
 ### Ordner statt MPQ
 
 Der Client öffnet einen Ordner mit MPQ-Namen wie ein Archiv. Im Spieltest (2026-10-11)
-lief der Ordner direkt, ohne ihn zu packen, mit einer per St0nys AIO WoW EXE Patcher
-gepatchten Exe und dem Ordnernamen `patch-Z.mpq` (Buchstaben-Suffix, siehe Nr. 21
-„Erweiterte MPQ-Namen erlauben“). Mit `--name patch-Z.mpq` baut das Werkzeug den
+lief der Ordner direkt, ohne ihn zu packen, mit einer per
+[St0nys AIO WoW EXE Patcher](https://github.com/Raz0r1337/St0nys-AIO-WoW-EXE-Patcher)
+gepatchten Exe und dem Ordnernamen `patch-Z.mpq` (Buchstaben-Suffix, siehe dort Patch
+Nr. 21 „Erweiterte MPQ-Namen erlauben“). Mit `--name patch-Z.mpq` baut das Werkzeug den
 Ordner gleich unter diesem Namen.
 
 Zum Hintergrund in der Original-Exe: `SFileOpenArchive` (VA `0x45C480`) fragt den
@@ -201,7 +210,7 @@ Prüfen lässt sich das unter DXVK mit `DXVK_SHADER_DUMP_PATH`: Die neuen Shader
   Summe += Farbe * ndl * att
   ```
 
-  mit den Registern, die Nr. 69 belegt: `c236–c239` Farbe, `c240–c243` Position,
+  mit den Registern, die „Mehr Lichter“ belegt: `c236–c239` Farbe, `c240–c243` Position,
   `c244–c246` Abschwächung. Die Sättigung der Summe wandert ans Ende des Zusatzblocks.
   Der Nenner der Abschwächung wird vor dem Kehrwert per `max` auf `c247.w` (= 1e-6,
   eigener `def`) begrenzt, damit bei nie gesetzten Registern keine Division durch 0
@@ -214,8 +223,8 @@ Prüfen lässt sich das unter DXVK mit `DXVK_SHADER_DUMP_PATH`: Die neuen Shader
 
 ### Ohne Exe-Patch
 
-Sind die neuen Shader da, aber die Exe hat Patch Nr. 69 nicht, schreibt die Exe nie in
-`c236`–`c246`; dort steht dann 0 (unter DXVK sicher, da der Konstantenpuffer mit 0
+Sind die neuen Shader da, aber die Exe hat „Mehr Lichter“ nicht, schreibt die Exe nie
+in `c236`–`c246`; dort steht dann 0 (unter DXVK sicher, da der Konstantenpuffer mit 0
 beginnt; unter Windows-D3D9 nach Dokumentation ebenso). Farbe 0 heißt: Licht 5–8
 tragen nichts bei, die Shader liefern bitgleich das Original mit 4 Lichtern. Ohne die
 `max`-Begrenzung wäre die Abschwächung 1/0; 0 · unendlich ist nach IEEE NaN und nur
@@ -223,23 +232,23 @@ nach D3D9-Regel 0 (DXVK bildet die Regel nach, andere Hardware nicht sicher). Mi
 Begrenzung ist der Fall unabhängig davon sauber. Geprüft: `test_lights8.py` Test 3 und
 `d3d9_check.py` (jede Variante zusätzlich mit `c236`–`c250` = 0).
 
-Umgekehrt (Exe mit Nr. 69, Original-Shader): Licht 1–4 schreibt weiterhin die
+Umgekehrt (Exe mit „Mehr Lichter“, Original-Shader): Licht 1–4 schreibt weiterhin die
 unveränderte Original-Funktion nach `c17`–`c27`, und AddLight behält dieselben 4
 nächsten Lichter wie ohne Patch. Die Exe lädt zusätzlich `c236`–`c246` hoch, was die
 Original-Shader nicht lesen. Modelle, Gebäude und Boden sehen also aus wie im Original;
-nur `fixedFunction 1` zeigt 8 Lichter. Nr. 70 („Lichter bleiben an“) ist ein eigener,
-standardmäßig ausgeschalteter Patch: Lichter bleiben aktiv, wenn ihr Modell nicht im
-Bild ist. Das wirkt mit und ohne neue Shader gleich und hat mit der Zahl der Lichter
-nichts zu tun.
+nur `fixedFunction 1` zeigt 8 Lichter. „Lichter bleiben an“ ist ein eigener Patch (im
+veröffentlichten Patcher wie „Mehr Lichter“ Teil des Standard-Presets „Reforged“):
+Lichter bleiben aktiv, wenn ihr Modell nicht im Bild ist. Das wirkt mit und ohne neue
+Shader gleich und hat mit der Zahl der Lichter nichts zu tun.
 
 Der Boden-Shader ist bei gar nicht gepatchter Exe aus demselben Grund
-harmlos (eigener `def c251`). Ist aber Nr. 69 da und der Exe-Teil für den Boden
+harmlos (eigener `def c251`). Ist aber „Mehr Lichter“ da und der Exe-Teil für den Boden
 fehlt (Stand des Patchers vor dem 2026-10-12), stehen in `c236`–`c250` die
 Modell-Lichter in anderem Format: der Boden wird falsch beleuchtet. Darum den Boden
-nur mit einer Exe einsetzen, deren Nr. 69 den Boden-Teil hat.
+nur mit einer Exe einsetzen, deren „Mehr Lichter“ den Boden-Teil hat.
 
-Mit Nr. 69 **samt** Boden-Teil sind alle Kombinationen sauber, weil jeder Shader
-`c236` ff. nur direkt nach seinem eigenen Upload liest (Nr. 69 lädt vor jedem
+Mit „Mehr Lichter“ **samt** Boden-Teil sind alle Kombinationen sauber, weil jeder Shader
+`c236` ff. nur direkt nach seinem eigenen Upload liest („Mehr Lichter“ lädt vor jedem
 Modell, der Boden-Teil vor jedem Bodenstück):
 
 | Shader im Ordner | Modelle, Gebäude | Boden |
@@ -248,10 +257,10 @@ Modell, der Boden-Teil vor jedem Bodenstück):
 | neu, mit `--ohne-boden` | 8 Lichter | 3 Lichter (Original) |
 | neu (Standard) | 8 Lichter | 8 Lichter |
 
-So ist es im Patcher umgesetzt (seit 2026-10-12, heute im Zweig `st0ny-dev`): Der
-Boden-Teil ist fester Bestandteil von Nr. 69, nicht einzeln wählbar. Gäbe es ihn ohne
-den Modell-Teil, läsen die neuen Modell-Shader in `c236`–`c246` die Bodenlichter in
-falschem Format. Seit dem Spieltest vom 2026-10-14 ist der Boden Standard beim Bauen.
+So ist es im Patcher umgesetzt (seit 2026-10-12): Der Boden-Teil ist fester Bestandteil
+von „Mehr Lichter“, nicht einzeln wählbar. Gäbe es ihn ohne den Modell-Teil, läsen die
+neuen Modell-Shader in `c236`–`c246` die Bodenlichter in falschem Format. Seit dem
+Spieltest vom 2026-10-14 ist der Boden Standard beim Bauen.
 
 ## Tests
 
@@ -305,15 +314,15 @@ Der Modell-Teil des Lichter-Patches ändert daran nichts, darum bekam der Boden 
 weiter nur 3 der 8 Lichter und an den Kanten der Bodenstücke sieht man Sprünge (so auch
 im Original). `tools/terrain8.py` erweitert die Boden-Varianten auf 8 Lichter, die
 Licht 4–8 aus c236–c250 lesen (je Licht Position, Farbe, Abschwächung wie c28–c36).
-Diese Konstanten liefert der Boden-Teil von Nr. 69 (im Patcher seit 2026-10-12, heute
-im Zweig `st0ny-dev`); Stellen, Format und die lesende Prüfung des Exe-Teils stehen in
+Diese Konstanten liefert der Boden-Teil von „Mehr Lichter“ (im Patcher seit 2026-10-12);
+Stellen, Format und die lesende Prüfung des Exe-Teils stehen in
 [docs/BODEN.de.md](docs/BODEN.de.md). Spieltest 2026-10-14 (Sascha, acht Lagerfeuer):
 keine Fehler, der Boden wird von allen Feuern beleuchtet. Seitdem baut das Werkzeug
 den Boden standardmäßig mit.
 
 **Ohne diesen Exe-Teil die Boden-Shader nicht einsetzen** (Exe mit einem Stand von
-Nr. 69 vor dem 2026-10-12): Sie lesen dann Reste der Modell-Lichter und der Boden wird
-falsch beleuchtet. Für so eine Exe den Boden weglassen:
+„Mehr Lichter“ vor dem 2026-10-12): Sie lesen dann Reste der Modell-Lichter und der
+Boden wird falsch beleuchtet. Für so eine Exe den Boden weglassen:
 
 ```
 python3 tools/build.py QUELLE ZIEL --ohne-boden
