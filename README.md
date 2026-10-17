@@ -3,9 +3,15 @@
 Deutsche Fassung: [README.de.md](README.de.md)
 
 Tool for WoW 3.3.5a (12340): builds, from your own original shaders, vertex shaders that
-render up to **8 point lights**. Counterpart to patch **No. 69 "More lights: 8 instead of
-4 point lights"** from St0ny's AIO WoW EXE Patcher (No. 66 until 2026-10-11). Without new
-shaders the exe does pass lights 5–8 to the graphics, but they never become visible.
+render up to **8 point lights**. Counterpart to the patch **"More lights: 8 instead of
+4 point lights (groundwork for new shaders)"** from
+[St0ny's AIO WoW EXE Patcher](https://github.com/Raz0r1337/St0nys-AIO-WoW-EXE-Patcher)
+([patch description](https://github.com/Raz0r1337/St0nys-AIO-WoW-EXE-Patcher/blob/HEAD/docs/PATCHES.en.md#patch-lights)).
+Without new shaders the exe does pass lights 5–8 to the graphics, but they never become
+visible. The patcher numbers its patches, and the numbers shift between its branches
+(as of 2026-10-17: No. 67 in the released patcher, `st0ny-main`; No. 69 in `st0ny-dev`),
+so this README calls the patches by their short names, "More lights" and "Lights stay
+on".
 
 The repo contains **no Blizzard files**. The new shaders are created on the player's side
 from their own files.
@@ -18,7 +24,7 @@ If you do not want to build it yourself, take the finished zip from the
 | File | What for |
 |---|---|
 | `patch-5.MPQ.zip` | **Normal case**: models, buildings and terrain with 8 lights |
-| `patch-5.MPQ_without_terrain.zip` | models and buildings only; for an exe whose No. 69 does not yet have the terrain part (patcher before 2026-10-12) |
+| `patch-5.MPQ_without_terrain.zip` | models and buildings only; for an exe whose "More lights" does not yet have the terrain part (patcher before 2026-10-12) |
 | `patch-5.MPQ_test_build_magenta.zip` | test build, lights 5–8 glow magenta (see "Testing in the game") |
 | `SHA256SUMS.txt` | checksums of the three zips |
 
@@ -31,9 +37,11 @@ that the result is bit-identical to the version confirmed in the game (section
 
 ## Requirements
 
-- `Wow.exe` 3.3.5a with No. 69; for testing, ideally also No. 70 ("Lights stay on when
-  their source is off-screen"). Since 2026-10-15 both are in the patcher's `st0ny-dev`
-  branch (still [BETA], not yet in `st0ny-main`).
+- `Wow.exe` 3.3.5a with "More lights"; for testing, ideally also
+  ["Lights stay on when their source is off-screen"](https://github.com/Raz0r1337/St0nys-AIO-WoW-EXE-Patcher/blob/HEAD/docs/PATCHES.en.md#patch-lightstay).
+  Since 2026-10-17 both are in the
+  [released patcher](https://github.com/Raz0r1337/St0nys-AIO-WoW-EXE-Patcher/releases)
+  (v2026.10.17.2, branch `st0ny-main`); before that they were only in `st0ny-dev`.
 - Python 3 (standard library only). The tests additionally need `numpy`.
 
 ## Usage
@@ -68,7 +76,7 @@ that the result is bit-identical to the version confirmed in the game (section
 
 ### Preparation
 
-- Patch `Wow.exe` with No. 69 and No. 70.
+- Patch `Wow.exe` with "More lights" and "Lights stay on".
 - `WTF\Config.wtf` must contain `SET gxApi "d3d9"` (with DXVK it does anyway) and
   `fixedFunction` must not be `1` (`/console fixedFunction 0`, then restart).
   Under OpenGL (`gxApi "opengl"`) the game uses different shaders, and nothing takes effect.
@@ -111,14 +119,14 @@ Then either the exe side is not active or the new shaders are not being loaded. 
 tests tell these apart:
 
 **Check the exe side without shaders.** Enter `/console fixedFunction 1` in the game and
-restart it. In this mode the game works without shaders, and No. 69 gives the graphics
-device 8 light slots instead of 4. Then, in a dark place, put campfires around your
-character one after another (Cooking, "Basic Campfire"):
+restart it. In this mode the game works without shaders, and "More lights" gives the
+graphics device 8 light slots instead of 4. Then, in a dark place, put campfires around
+your character one after another (Cooking, "Basic Campfire"):
 
 | What you see | Meaning |
 |---|---|
-| From the 4th fire on, one goes out again (at most 3 fires lit at the same time) | No. 69 is not active (original: 4 slots, one of them for the sun) |
-| Up to 7 fires light the character at the same time | No. 69 is working, the exe delivers the lights |
+| From the 4th fire on, one goes out again (at most 3 fires lit at the same time) | "More lights" is not active (original: 4 slots, one of them for the sun) |
+| Up to 7 fires light the character at the same time | "More lights" is working, the exe delivers the lights |
 
 Afterwards `/console fixedFunction 0` again and restart.
 
@@ -165,17 +173,18 @@ small, since a campfire only shines a few meters. Nothing is missing, nothing is
 The difference is clearer with a character standing between more than four nearby light
 sources, or with rows of torches in cities.
 
-With the terrain (default since 2026-10-14, exe with No. 69 from 2026-10-12 on): in-game
-test without errors, the terrain is lit by all eight fires instead of three per terrain
-chunk.
+With the terrain (default since 2026-10-14, exe with "More lights" from 2026-10-12 on):
+in-game test without errors, the terrain is lit by all eight fires instead of three per
+terrain chunk.
 
 ### Folder instead of MPQ
 
 The client opens a folder with an MPQ name like an archive. In the in-game test
 (2026-10-11) the folder worked directly, without packing it, with an exe patched by
-St0ny's AIO WoW EXE Patcher and the folder name `patch-Z.mpq` (letter suffix, see No. 21
-"Allow extended MPQ names"). With `--name patch-Z.mpq` the tool builds the folder under
-this name right away.
+[St0ny's AIO WoW EXE Patcher](https://github.com/Raz0r1337/St0nys-AIO-WoW-EXE-Patcher)
+and the folder name `patch-Z.mpq` (letter suffix, see its patch No. 21 "Allow extended
+MPQ names"). With `--name patch-Z.mpq` the tool builds the folder under this name right
+away.
 
 Background in the original exe: `SFileOpenArchive` (VA `0x45C480`) queries the file
 type (`0x427170`); a folder (`FILE_ATTRIBUTE_DIRECTORY`, set at `0x435760`) gets type 2
@@ -202,7 +211,7 @@ This can be checked under DXVK with `DXVK_SHADER_DUMP_PATH`: the new shaders rea
   ```
 
   (`Lichtposition` = light position, `Farbe` = color, `Summe` = sum) with the registers
-  that No. 69 fills: `c236–c239` color, `c240–c243` position, `c244–c246` attenuation.
+  that "More lights" fills: `c236–c239` color, `c240–c243` position, `c244–c246` attenuation.
   The saturation of the sum moves to the end of the extra block. Before the reciprocal,
   the denominator of the attenuation is clamped with `max` to at least `c247.w` (= 1e-6,
   its own `def`), so that registers that are never set do not cause a division by 0 (see
@@ -215,7 +224,7 @@ This can be checked under DXVK with `DXVK_SHADER_DUMP_PATH`: the new shaders rea
 
 ### Without the exe patch
 
-If the new shaders are present but the exe does not have patch No. 69, the exe never
+If the new shaders are present but the exe does not have "More lights", the exe never
 writes to `c236`–`c246`; they then hold 0 (certain under DXVK, since the constant buffer
 starts out at 0; under Windows D3D9 likewise according to the documentation). Color 0
 means: lights 5–8 contribute nothing, so the shaders deliver the original with 4 lights
@@ -225,23 +234,24 @@ may not). With the clamp, the case is clean regardless. Checked:
 `test_lights8.py` test 3 and `d3d9_check.py` (each variant additionally with
 `c236`–`c250` = 0).
 
-The other way round (exe with No. 69, original shaders): lights 1–4 are still written to
-`c17`–`c27` by the unchanged original function, and AddLight keeps the same 4 nearest
-lights as without the patch. The exe additionally uploads `c236`–`c246`, which the
-original shaders do not read. So models, buildings and terrain look as in the original;
-only `fixedFunction 1` shows 8 lights. No. 70 ("Lights stay on") is a separate patch,
-off by default: lights stay active when their model is not in view. It works the same
-with and without the new shaders and has nothing to do with the number of lights.
+The other way round (exe with "More lights", original shaders): lights 1–4 are still
+written to `c17`–`c27` by the unchanged original function, and AddLight keeps the same
+4 nearest lights as without the patch. The exe additionally uploads `c236`–`c246`, which
+the original shaders do not read. So models, buildings and terrain look as in the original;
+only `fixedFunction 1` shows 8 lights. "Lights stay on" is a separate patch (in the
+released patcher part of the default preset "Reforged", like "More lights"): lights stay
+active when their model is not in view. It works the same with and without the new
+shaders and has nothing to do with the number of lights.
 
 With a completely unpatched exe, the terrain shader is harmless for the same reason
-(its own `def c251`). But if No. 69 is present and the exe part for the terrain is
-missing (patcher state before 2026-10-12), `c236`–`c250` hold the model lights in a
+(its own `def c251`). But if "More lights" is present and the exe part for the terrain
+is missing (patcher state before 2026-10-12), `c236`–`c250` hold the model lights in a
 different format: the terrain is lit incorrectly. So use the terrain only with an exe
-whose No. 69 has the terrain part.
+whose "More lights" has the terrain part.
 
-With No. 69 **including** the terrain part, all combinations are clean, because each
-shader reads `c236` onwards only directly after its own upload (No. 69 uploads before
-each model, the terrain part before each terrain chunk):
+With "More lights" **including** the terrain part, all combinations are clean, because
+each shader reads `c236` onwards only directly after its own upload ("More lights"
+uploads before each model, the terrain part before each terrain chunk):
 
 | Shaders in the folder | Models, buildings | Terrain |
 |---|---|---|
@@ -249,11 +259,10 @@ each model, the terrain part before each terrain chunk):
 | new, with `--ohne-boden` (without terrain) | 8 lights | 3 lights (original) |
 | new (default) | 8 lights | 8 lights |
 
-This is how it is implemented in the patcher (since 2026-10-12, now in the branch
-`st0ny-dev`): the terrain part is a fixed part of No. 69, not selectable on its own. If
-it existed without the model part, the new model shaders would read the terrain lights
-in `c236`–`c246` in the wrong format. Since the in-game test of 2026-10-14, the terrain
-is the default when building.
+This is how it is implemented in the patcher (since 2026-10-12): the terrain part is a
+fixed part of "More lights", not selectable on its own. If it existed without the model
+part, the new model shaders would read the terrain lights in `c236`–`c246` in the wrong
+format. Since the in-game test of 2026-10-14, the terrain is the default when building.
 
 ## Tests
 
@@ -307,16 +316,16 @@ part of the lights patch does not change that, which is why at first the terrain
 got only 3 of the 8 lights, and at the edges of the terrain chunks you can see jumps
 (as in the original). `tools/terrain8.py` extends the terrain variants to 8 lights,
 which read lights 4–8 from c236–c250 (position, color and attenuation per light, as in
-c28–c36). These constants are delivered by the terrain part of No. 69 (in the patcher
-since 2026-10-12, now in the branch `st0ny-dev`); locations, format and the read-only
-check of the exe part are in [docs/BODEN.de.md](docs/BODEN.de.md) (German). In-game
-test 2026-10-14 (Sascha, eight campfires): no errors, the terrain is lit by all fires.
-Since then the tool builds the terrain by default.
+c28–c36). These constants are delivered by the terrain part of "More lights" (in the
+patcher since 2026-10-12); locations, format and the read-only check of the exe part
+are in [docs/BODEN.de.md](docs/BODEN.de.md) (German). In-game test 2026-10-14 (Sascha,
+eight campfires): no errors, the terrain is lit by all fires. Since then the tool builds
+the terrain by default.
 
-**Do not use the terrain shaders without this exe part** (exe with a state of No. 69
-from before 2026-10-12): they then read leftovers of the model lights and the terrain
-is lit incorrectly. For such an exe, leave out the terrain (`QUELLE` = source folder,
-`ZIEL` = target folder):
+**Do not use the terrain shaders without this exe part** (exe with a state of
+"More lights" from before 2026-10-12): they then read leftovers of the model lights and
+the terrain is lit incorrectly. For such an exe, leave out the terrain (`QUELLE` = source
+folder, `ZIEL` = target folder):
 
 ```
 python3 tools/build.py QUELLE ZIEL --ohne-boden
